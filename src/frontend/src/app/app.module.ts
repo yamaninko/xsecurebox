@@ -5,6 +5,8 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 
 import { AppComponent } from './app.component';
+import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+import { AuthLayoutComponent } from './layout/auth-layout/auth-layout.component';
 import { AppRoutingModule } from './app-routing.module';
 import { CoreModule } from './core/core.module';
 import { SharedModule } from './shared/shared.module';
@@ -12,7 +14,9 @@ import { AuthInterceptor } from './core/auth/auth.interceptor';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    MainLayoutComponent,
+    AuthLayoutComponent
   ],
   imports: [
     BrowserModule,
@@ -33,4 +37,3 @@ import { AuthInterceptor } from './core/auth/auth.interceptor';
   bootstrap: [AppComponent]
 })
 export class AppModule { }
-

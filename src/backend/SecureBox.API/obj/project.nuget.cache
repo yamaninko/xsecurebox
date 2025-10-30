@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "RFE1SI9QUCI=",
+  "dgSpecHash": "ca0j3oE+5UE=",
   "success": true,
   "projectFilePath": "/Users/gtmac29/projects/secure-box/src/backend/SecureBox.API/SecureBox.API.csproj",
   "expectedPackageFiles": [
@@ -28,6 +28,7 @@
     "/Users/gtmac29/.nuget/packages/microsoft.extensions.apidescription.server/6.0.5/microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.extensions.caching.abstractions/9.0.0/microsoft.extensions.caching.abstractions.9.0.0.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.extensions.caching.memory/9.0.0/microsoft.extensions.caching.memory.9.0.0.nupkg.sha512",
+    "/Users/gtmac29/.nuget/packages/microsoft.extensions.caching.stackexchangeredis/9.0.0/microsoft.extensions.caching.stackexchangeredis.9.0.0.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.extensions.configuration.abstractions/9.0.0/microsoft.extensions.configuration.abstractions.9.0.0.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.extensions.configuration.binder/9.0.0/microsoft.extensions.configuration.binder.9.0.0.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.extensions.dependencyinjection/9.0.0/microsoft.extensions.dependencyinjection.9.0.0.nupkg.sha512",
