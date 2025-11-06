@@ -3,6 +3,7 @@ using RabbitMQ.Client.Events;
 using SecureBox.Core.Interfaces;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace SecureBox.Infrastructure.Services;
 
