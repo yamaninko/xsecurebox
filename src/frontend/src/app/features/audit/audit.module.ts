@@ -8,8 +8,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [AuditPageComponent],
-  imports: [CommonModule, RouterModule.forChild(routes)]
+  imports: [CommonModule, RouterModule.forChild(routes), AuditPageComponent]
 })
 export class AuditModule {}
 

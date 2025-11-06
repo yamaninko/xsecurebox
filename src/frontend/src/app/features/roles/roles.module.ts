@@ -8,8 +8,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [RolesPageComponent],
-  imports: [CommonModule, RouterModule.forChild(routes)]
+  imports: [CommonModule, RouterModule.forChild(routes), RolesPageComponent]
 })
 export class RolesModule {}
 

@@ -12,7 +12,7 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infrastructure/postgres:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     networks:
@@ -143,6 +143,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
+      - EnableSwagger=true
+      - DisableHttpsRedirect=true
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=securebox;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-RedisPass123!}
       - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox_logs?authSource=admin
@@ -150,6 +153,8 @@ services:
     volumes:
       - ./infrastructure/certificates:/app/certificates:ro
       - ./logs/api-1:/app/logs
+    ports:
+      - "5002:5000"
     networks:
       - backend-network
       - frontend-network
@@ -177,6 +182,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
+      - EnableSwagger=true
+      - DisableHttpsRedirect=true
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=securebox;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-RedisPass123!}
       - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox_logs?authSource=admin
@@ -184,6 +192,8 @@ services:
     volumes:
       - ./infrastructure/certificates:/app/certificates:ro
       - ./logs/api-2:/app/logs
+    ports:
+      - "5001:5000"
     networks:
       - backend-network
       - frontend-network
@@ -255,4 +265,3 @@ networks:
     driver: bridge
   monitoring-network:
     driver: bridge
-

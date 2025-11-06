@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -126,7 +127,10 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+// Enable Swagger in Development or when explicitly toggled via config/env (EnableSwagger=true)
+var enableSwagger = app.Environment.IsDevelopment() ||
+                    (builder.Configuration.GetValue<bool>("EnableSwagger"));
+if (enableSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -135,7 +139,18 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// Respect reverse proxy headers (X-Forwarded-For/Proto) when behind Nginx
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+// Allow disabling HTTPS redirection for local/dev via config/env (DisableHttpsRedirect=true)
+var disableHttpsRedirect = builder.Configuration.GetValue<bool>("DisableHttpsRedirect");
+if (!disableHttpsRedirect)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("AllowPortal");
 

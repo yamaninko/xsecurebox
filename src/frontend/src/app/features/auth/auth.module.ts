@@ -9,8 +9,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [LoginPageComponent],
-  imports: [CommonModule, RouterModule.forChild(routes)]
+  imports: [CommonModule, RouterModule.forChild(routes), LoginPageComponent]
 })
 export class AuthModule {}
 

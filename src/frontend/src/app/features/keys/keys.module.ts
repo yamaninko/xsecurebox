@@ -8,8 +8,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [KeysPageComponent],
-  imports: [CommonModule, RouterModule.forChild(routes)]
+  imports: [CommonModule, RouterModule.forChild(routes), KeysPageComponent]
 })
 export class KeysModule {}
 

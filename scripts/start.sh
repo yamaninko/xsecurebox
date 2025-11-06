@@ -59,16 +59,16 @@ echo "[Step] Starting stack in detached mode…"
 compose up -d
 
 echo "[OK] Stack is starting. Useful URLs (once healthy):"
-echo "  - API via LB:     https://localhost (or http://localhost if TLS disabled)"
-echo "  - Swagger (API):  http://localhost:5000/swagger (direct container if exposed)"
-echo "  - Portal:         http://localhost"
-echo "  - Kibana:         http://localhost:5601"
-echo "  - RabbitMQ:       http://localhost:15672"
-echo "  - Postgres:       localhost:5432"
+echo "  - API via LB:       http://localhost (use /api/* routes; TLS off by default)"
+echo "  - Swagger (via LB): http://localhost/api/swagger"
+echo "  - Swagger (direct): http://localhost:5002/swagger (api-1), http://localhost:5001/swagger (api-2)"
+echo "  - Portal:           http://localhost"
+echo "  - Kibana:           http://localhost:5601"
+echo "  - RabbitMQ:         http://localhost:15672"
+echo "  - Postgres:         localhost:5432"
 
 if [[ "${WARN}" -eq 1 ]]; then
   echo "[Note] One or more optional infra files/dirs are missing; see warnings above."
 fi
 
-echo "[Tip] To view logs: compose logs -f nginx api-1 api-2 portal"
-
+echo "[Tip] To view logs: docker compose logs -f nginx api-1 api-2 portal"
