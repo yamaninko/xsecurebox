@@ -47,6 +47,15 @@ public record KeyQueryParams(
     string? Search = null
 );
 
+public record RetrieveKeyRequest(string? Reason = null);
+
+public record RotateKeyRequest(
+    string NewValue,
+    string? Reason = null
+);
+
+public record RevokeKeyRequest(string Reason);
+
 public record AuditTrailDto(
     Guid? UserId,
     string Action,

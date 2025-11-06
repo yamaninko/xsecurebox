@@ -16,6 +16,8 @@ public record TokenResponse(
     string TokenType
 );
 
+public record RefreshTokenRequest(string RefreshToken);
+
 public record ChangePasswordRequest(
     string CurrentPassword,
     string NewPassword,

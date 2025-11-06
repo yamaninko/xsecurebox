@@ -6,7 +6,7 @@ services:
     image: postgres:16-alpine
     container_name: securebox-postgres
     environment:
-      POSTGRES_DB: securebox
+      POSTGRES_DB: secureboxdb
       POSTGRES_USER: securebox_user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMe123!}
       PGDATA: /var/lib/postgresql/data/pgdata
@@ -18,7 +18,7 @@ services:
     networks:
       - backend-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U securebox_user -d securebox"]
+      test: ["CMD-SHELL", "pg_isready -U securebox_user -d secureboxdb"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,7 +47,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-MongoPass123!}
-      MONGO_INITDB_DATABASE: securebox_logs
+      MONGO_INITDB_DATABASE: securebox
     volumes:
       - mongodb-data:/data/db
     ports:
@@ -146,9 +146,9 @@ services:
       - EnableSwagger=true
       - DisableHttpsRedirect=true
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=securebox;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=secureboxdb;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-RedisPass123!}
-      - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox_logs?authSource=admin
+      - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox?authSource=admin
       - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASS:-RabbitPass123!}@rabbitmq:5672/
     volumes:
       - ./infrastructure/certificates:/app/certificates:ro
@@ -185,9 +185,9 @@ services:
       - EnableSwagger=true
       - DisableHttpsRedirect=true
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=securebox;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=secureboxdb;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
       - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-RedisPass123!}
-      - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox_logs?authSource=admin
+      - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox?authSource=admin
       - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASS:-RabbitPass123!}@rabbitmq:5672/
     volumes:
       - ./infrastructure/certificates:/app/certificates:ro
