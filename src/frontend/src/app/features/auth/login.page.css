@@ -1,0 +1,255 @@
+.login-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 500px;
+  min-width: 320px;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+  overflow: visible;
+}
+
+.login-header {
+  width: 100%;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.login-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #667eea;
+  margin-bottom: 16px;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.4;
+}
+
+mat-card-content {
+  padding: 30px !important;
+}
+
+::ng-deep .login-card .mat-mdc-card-content:first-child {
+  padding-top: 30px !important;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-form-field {
+  margin-bottom: 10px;
+}
+
+.login-button {
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 10px;
+  position: relative;
+}
+
+.button-spinner {
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.login-info {
+  margin-top: 30px;
+  padding: 16px;
+  background-color: #e3f2fd;
+  border-radius: 8px;
+  border-left: 4px solid #2196f3;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-icon {
+  color: #2196f3;
+  margin-top: 2px;
+}
+
+.login-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.login-info strong {
+  color: #1976d2;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  background-color: rgba(33, 150, 243, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.login-footer {
+  margin-top: 30px;
+  text-align: center;
+  color: white;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.login-footer p {
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login-container {
+    padding: 15px;
+  }
+
+  .login-card {
+    max-width: 95%;
+  }
+
+  mat-card-content {
+    padding: 25px 20px !important;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+
+  .login-icon {
+    font-size: 52px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .login-info {
+    padding: 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 10px;
+  }
+
+  .login-card {
+    max-width: 100%;
+    min-width: auto;
+  }
+
+  mat-card-content {
+    padding: 20px 15px !important;
+  }
+
+  .login-header {
+    padding: 15px 0;
+  }
+
+  .login-title {
+    font-size: 22px;
+  }
+
+  .login-subtitle {
+    font-size: 13px;
+  }
+
+  .login-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  .login-button {
+    height: 44px;
+    font-size: 15px;
+  }
+
+  .login-info {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .login-footer {
+    margin-top: 20px;
+    font-size: 12px;
+  }
+}
+
+/* Material Overrides */
+::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+::ng-deep .mat-mdc-form-field-error {
+  font-size: 12px;
+}
+
+::ng-deep .mat-mdc-form-field.mat-form-field-disabled {
+  opacity: 0.6;
+}
+
+::ng-deep .login-card .mdc-card__content {
+  padding: 0 !important;
+}
+
+::ng-deep .mat-mdc-card-header {
+  padding: 0 !important;
+}
+
+/* Snackbar Error Style */
+::ng-deep .error-snackbar {
+  background-color: #f44336 !important;
+  color: white !important;
+}
+
+::ng-deep .error-snackbar .mat-simple-snack-bar-content {
+  color: white !important;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-card {
+  animation: fadeIn 0.5s ease-out;
+}
+
