@@ -1,37 +1,118 @@
 <div class="certificates-container">
   <div class="certificates-header">
     <div>
-      <h1>📜 Certificate Management</h1>
-      <p class="subtitle">Manage encryption certificates</p>
+      <h1>📜 Sertifika Yönetimi</h1>
+      <p class="subtitle">Şifreleme sertifikalarını yönetin</p>
     </div>
-    <button class="btn btn-primary" (click)="uploadCertificate()">
-      📤 Upload Certificate
+    <button class="btn btn-primary" (click)="openUploadModal()">
+      📤 Sertifika Yükle
     </button>
   </div>
 
   <div *ngIf="loading" class="loading">
     <div class="spinner"></div>
-    <p>Loading certificates...</p>
+    <p>Sertifikalar yükleniyor...</p>
   </div>
 
   <div *ngIf="!loading" class="certificates-grid">
     <div *ngFor="let cert of certificates" class="cert-card">
-      <div class="cert-icon">📜</div>
+      <div class="cert-icon">
+        <span class="cert-emoji">📜</span>
+        <span *ngIf="isExpiringSoon(cert.notAfter)" class="expiry-warning">⚠️</span>
+      </div>
       <div class="cert-info">
         <h3>{{ cert.name }}</h3>
         <p class="cert-desc">{{ cert.description }}</p>
         <div class="cert-details">
-          <p><strong>Subject:</strong> {{ cert.subject }}</p>
-          <p><strong>Issuer:</strong> {{ cert.issuer }}</p>
-          <p><strong>Valid:</strong> {{ cert.notBefore | date:'short' }} - {{ cert.notAfter | date:'short' }}</p>
-          <p><strong>Thumbprint:</strong> <code>{{ cert.thumbprint }}</code></p>
+          <div class="detail-item">
+            <span class="detail-label">Subject:</span>
+            <span class="detail-value">{{ cert.subject }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Issuer:</span>
+            <span class="detail-value">{{ cert.issuer }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Geçerlilik:</span>
+            <span class="detail-value">{{ cert.notBefore | date:'dd/MM/yyyy' }} - {{ cert.notAfter | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Thumbprint:</span>
+            <code class="thumbprint">{{ cert.thumbprint }}</code>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Yükleyen:</span>
+            <span class="detail-value">{{ cert.uploadedBy }}</span>
+          </div>
         </div>
-        <span class="badge badge-success">{{ cert.status }}</span>
+        <div class="cert-badges">
+          <span class="badge" [ngClass]="getStatusClass(cert.status)">{{ cert.status }}</span>
+          <span *ngIf="isExpiringSoon(cert.notAfter)" class="badge badge-warning">Yakında Sona Erecek</span>
+        </div>
       </div>
       <div class="cert-actions">
-        <button class="btn-sm" (click)="revokeCertificate(cert)">Revoke</button>
+        <button class="btn-sm btn-warning" (click)="revokeCertificate(cert)">İptal Et</button>
+        <button class="btn-sm btn-danger" (click)="deleteCertificate(cert)">Sil</button>
       </div>
     </div>
+
+    <div *ngIf="certificates.length === 0" class="no-certificates">
+      <span class="no-data-icon">📭</span>
+      <p>Henüz sertifika yüklenmemiş</p>
+      <button class="btn btn-primary" (click)="openUploadModal()">İlk Sertifikayı Yükle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Certificate Modal -->
+<div class="modal-overlay" *ngIf="showUploadModal" (click)="closeUploadModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>📤 Sertifika Yükle</h2>
+      <button class="btn-close" (click)="closeUploadModal()">✖</button>
+    </div>
+    <form (ngSubmit)="uploadCertificate()">
+      <div class="form-group">
+        <label>Sertifika Dosyası *</label>
+        <div class="file-input-container">
+          <input type="file" 
+                 (change)="onFileSelected($event)" 
+                 accept=".pem,.crt,.cer,.pfx,.p12"
+                 class="file-input"
+                 id="certFile">
+          <label for="certFile" class="file-input-label">
+            <span class="file-icon">📁</span>
+            <span *ngIf="!newCertificate.file">Dosya Seç (.pem, .crt, .cer)</span>
+            <span *ngIf="newCertificate.file">{{ newCertificate.file.name }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Sertifika Adı *</label>
+        <input type="text" 
+               [(ngModel)]="newCertificate.name" 
+               name="name" 
+               required 
+               class="form-input"
+               placeholder="Örn: Production SSL Certificate">
+      </div>
+
+      <div class="form-group">
+        <label>Açıklama</label>
+        <textarea 
+          [(ngModel)]="newCertificate.description" 
+          name="description" 
+          class="form-input"
+          rows="3"
+          placeholder="Sertifika hakkında not ekleyin..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeUploadModal()">İptal</button>
+        <button type="submit" class="btn btn-primary">Yükle</button>
+      </div>
+    </form>
   </div>
 </div>
 

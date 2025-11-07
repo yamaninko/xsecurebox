@@ -1,5 +1,5 @@
 .certificates-container {
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -14,37 +14,76 @@
 .certificates-header h1 {
   font-size: 2.5rem;
   margin: 0 0 0.5rem 0;
+  color: #1a202c;
 }
 
 .subtitle {
   color: #718096;
   margin: 0;
+  font-size: 1rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem;
+  color: #718096;
+}
+
+.spinner {
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .certificates-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
   gap: 1.5rem;
 }
 
 .cert-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 16px;
+  padding: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
+  transition: all 0.3s;
+}
+
+.cert-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .cert-icon {
-  font-size: 2.5rem;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-  border-radius: 12px;
+  position: relative;
+}
+
+.cert-emoji {
+  font-size: 4rem;
+  display: block;
+}
+
+.expiry-warning {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 1.5rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 .cert-info {
@@ -53,32 +92,55 @@
 
 .cert-info h3 {
   margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #2d3748;
 }
 
 .cert-desc {
   color: #718096;
-  font-size: 0.9rem;
   margin: 0 0 1rem 0;
 }
 
 .cert-details {
   background: #f7fafc;
-  padding: 1rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
+  padding: 1rem;
+  margin: 1rem 0;
 }
 
-.cert-details p {
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
+.detail-item {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.cert-details code {
-  background: white;
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #4a5568;
+  min-width: 100px;
+}
+
+.detail-value {
+  color: #718096;
+}
+
+.thumbprint {
+  background: #edf2f7;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-family: monospace;
+  font-family: 'Courier New', monospace;
   font-size: 0.85rem;
+  color: #2d3748;
+}
+
+.cert-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .badge {
@@ -93,10 +155,27 @@
   color: #22543d;
 }
 
+.badge-danger {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.badge-warning {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+.badge-secondary {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
 .cert-actions {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  align-items: flex-end;
+  justify-content: center;
 }
 
 .btn, .btn-sm {
@@ -105,35 +184,260 @@
   border: none;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
 }
 
 .btn-primary {
-  background: #3182ce;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
-.btn-sm {
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
   background: #e2e8f0;
   color: #2d3748;
 }
 
-.loading {
+.btn-secondary:hover {
+  background: #cbd5e0;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.btn-warning {
+  background: #ed8936;
+  color: white;
+}
+
+.btn-warning:hover {
+  background: #dd6b20;
+}
+
+.btn-danger {
+  background: #f56565;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #e53e3e;
+}
+
+/* No Certificates */
+.no-certificates {
   text-align: center;
-  padding: 4rem;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.spinner {
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #3182ce;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
+.no-data-icon {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: 1rem;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.no-certificates p {
+  color: #a0aec0;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
 }
 
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #2d3748;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #a0aec0;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-close:hover {
+  background: #f7fafc;
+  color: #4a5568;
+}
+
+.modal-content form {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #4a5568;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+textarea.form-input {
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* File Input */
+.file-input-container {
+  position: relative;
+}
+
+.file-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.file-input-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px dashed #cbd5e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f7fafc;
+}
+
+.file-input-label:hover {
+  border-color: #667eea;
+  background: #edf2f7;
+}
+
+.file-icon {
+  font-size: 1.5rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .certificates-container {
+    padding: 1rem;
+  }
+
+  .certificates-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .certificates-header h1 {
+    font-size: 2rem;
+  }
+
+  .cert-card {
+    flex-direction: column;
+    padding: 1.5rem;
+  }
+
+  .cert-icon {
+    text-align: center;
+  }
+
+  .cert-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .btn-sm {
+    flex: 1;
+  }
+
+  .modal-content {
+    width: 95%;
+  }
+}

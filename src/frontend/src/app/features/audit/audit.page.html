@@ -1,0 +1,189 @@
+<div class="audit-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>📋 Denetim Günlükleri</h1>
+      <p class="subtitle">Sistem aktivitelerini ve güvenlik olaylarını izleyin</p>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-export" (click)="exportLogs()">
+        📥 Dışa Aktar
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon success">✅</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getSuccessCount() }}</div>
+        <div class="stat-label">Başarılı İşlem</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon failed">❌</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getFailedCount() }}</div>
+        <div class="stat-label">Başarısız İşlem</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon warning">⚠️</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ getWarningCount() }}</div>
+        <div class="stat-label">Uyarı</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon total">📊</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ filteredLogs.length }}</div>
+        <div class="stat-label">Toplam Kayıt</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-container">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>🔍 Ara</label>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (input)="applyFilters()"
+          placeholder="Kullanıcı, aksiyon veya detay ara...">
+      </div>
+
+      <div class="filter-group">
+        <label>⚡ Aksiyon</label>
+        <select [(ngModel)]="selectedAction" (change)="applyFilters()">
+          <option value="">Tümü</option>
+          <option *ngFor="let action of uniqueActions" [value]="action">{{ action }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>📦 Kaynak</label>
+        <select [(ngModel)]="selectedResource" (change)="applyFilters()">
+          <option value="">Tümü</option>
+          <option *ngFor="let resource of uniqueResources" [value]="resource">{{ resource }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>📊 Durum</label>
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()">
+          <option value="">Tümü</option>
+          <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>📅 Başlangıç Tarihi</label>
+        <input 
+          type="date" 
+          [(ngModel)]="dateFrom" 
+          (change)="applyFilters()">
+      </div>
+
+      <div class="filter-group">
+        <label>📅 Bitiş Tarihi</label>
+        <input 
+          type="date" 
+          [(ngModel)]="dateTo" 
+          (change)="applyFilters()">
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-clear" (click)="clearFilters()">
+          🔄 Filtreleri Temizle
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Logs Table -->
+  <div class="table-container">
+    <table class="audit-table">
+      <thead>
+        <tr>
+          <th>Zaman</th>
+          <th>Aksiyon</th>
+          <th>Kaynak</th>
+          <th>Kullanıcı</th>
+          <th>IP Adresi</th>
+          <th>Durum</th>
+          <th>Detaylar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of paginatedLogs">
+          <td class="timestamp">
+            <div class="timestamp-date">{{ log.timestamp | date: 'dd/MM/yyyy' }}</div>
+            <div class="timestamp-time">{{ log.timestamp | date: 'HH:mm:ss' }}</div>
+          </td>
+          <td class="action">
+            <div class="action-badge">
+              <span class="action-icon">{{ getActionIcon(log.action) }}</span>
+              <span class="action-text">{{ log.action }}</span>
+            </div>
+          </td>
+          <td class="resource">
+            <span class="resource-badge">{{ log.resource }}</span>
+            <span *ngIf="log.resourceId" class="resource-id">{{ log.resourceId.substring(0, 8) }}</span>
+          </td>
+          <td class="username">
+            <div class="user-info">
+              <span class="user-avatar">👤</span>
+              <span>{{ log.username }}</span>
+            </div>
+          </td>
+          <td class="ip-address">{{ log.ipAddress }}</td>
+          <td class="status">
+            <span class="status-badge" [ngClass]="getStatusClass(log.status)">
+              {{ log.status }}
+            </span>
+          </td>
+          <td class="details">
+            <div class="details-text" [title]="log.details">
+              {{ log.details }}
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="paginatedLogs.length === 0">
+          <td colspan="7" class="no-data">
+            <div class="no-data-message">
+              <span class="no-data-icon">📭</span>
+              <p>Kayıt bulunamadı</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button 
+      class="btn btn-pagination" 
+      (click)="previousPage()" 
+      [disabled]="currentPage === 1">
+      ← Önceki
+    </button>
+    
+    <span class="pagination-info">
+      Sayfa {{ currentPage }} / {{ totalPages }} ({{ filteredLogs.length }} kayıt)
+    </span>
+    
+    <button 
+      class="btn btn-pagination" 
+      (click)="nextPage()" 
+      [disabled]="currentPage === totalPages">
+      Sonraki →
+    </button>
+  </div>
+</div>
+

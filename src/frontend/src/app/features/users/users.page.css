@@ -239,3 +239,106 @@
   border-top: 1px solid #e2e8f0;
 }
 
+/* Password Input Group */
+.password-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.password-input {
+  flex: 1;
+}
+
+.btn-icon {
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: #f7fafc;
+  border-color: #a0aec0;
+  transform: translateY(-1px);
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-suggest {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.btn-suggest:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+  border: none;
+}
+
+.btn-copy {
+  background: #48bb78;
+  color: white;
+  border: none;
+}
+
+.btn-copy:hover:not(:disabled) {
+  background: #38a169;
+  border: none;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  margin-top: 0.75rem;
+}
+
+.strength-bar {
+  height: 6px;
+  border-radius: 3px;
+  transition: all 0.3s;
+  margin-bottom: 0.5rem;
+}
+
+.strength-weak {
+  background: linear-gradient(90deg, #fc8181 0%, #fc8181 33%, #e2e8f0 33%);
+  width: 100%;
+}
+
+.strength-medium {
+  background: linear-gradient(90deg, #f6ad55 0%, #f6ad55 66%, #e2e8f0 66%);
+  width: 100%;
+}
+
+.strength-strong {
+  background: linear-gradient(90deg, #48bb78 0%, #48bb78 100%);
+  width: 100%;
+}
+
+.strength-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .password-input-group {
+    flex-wrap: wrap;
+  }
+  
+  .password-input {
+    width: 100%;
+  }
+  
+  .btn-icon {
+    flex: 1;
+  }
+}
+
