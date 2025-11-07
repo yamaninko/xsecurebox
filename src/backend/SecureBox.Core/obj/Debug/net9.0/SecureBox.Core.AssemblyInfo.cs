@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SecureBox.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+637972eb3699c97b5b24f134065374cc49a04cd2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+73ec266a079fb0a3b0eaca8ba9bdb138fc9876a2")]
 [assembly: System.Reflection.AssemblyProductAttribute("SecureBox.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SecureBox.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

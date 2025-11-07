@@ -30,7 +30,7 @@ export interface User {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = `${environment.apiUrl}/api/v1/auth`;
+  private readonly API_URL = `${environment.apiUrl}/v1/auth`;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 

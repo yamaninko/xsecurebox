@@ -84,6 +84,13 @@ docker-compose up -d
 # Frontend Portal: http://localhost:4200
 ```
 
+### Veritabanı Başlatma
+
+Backend servisi, PostgreSQL şemasını ve varsayılan admin kullanıcısını uygulama başlangıcında otomatik olarak oluşturur. 
+`appsettings.json` içindeki `Database.ApplyMigrationsOnStartup` ve `Database.SeedDefaultsOnStartup` ayarları (veya 
+environment değişkenleri `Database__ApplyMigrationsOnStartup`, `Database__SeedDefaultsOnStartup`) ile bu davranışı 
+aktif/pasif hale getirebilirsiniz. Kendi veritabanı otomasyonunuza sahipseniz bu ayarları `false` yapmanız yeterlidir.
+
 ## Güvenlik
 
 Bu sistem en yüksek güvenlik standartlarıyla tasarlanmıştır:
@@ -99,4 +106,3 @@ Detaylı güvenlik bilgisi için: [Güvenlik Kontrol Listesi](docs/08-security-c
 ## Lisans
 
 Proprietary - Tüm hakları saklıdır.
-

@@ -160,12 +160,14 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Apply migrations on startup (development only)
-if (app.Environment.IsDevelopment())
+try
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<SecureBoxDbContext>();
-    await dbContext.Database.MigrateAsync();
+    await DatabaseInitializer.InitializeAsync(app.Services);
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Database initialization failed");
+    throw;
 }
 
 Log.Information("Secure Box API starting up...");

@@ -40,7 +40,7 @@ export interface RetrieveKeyResponse {
   providedIn: 'root'
 })
 export class KeyService {
-  private readonly API_URL = `${environment.apiUrl}/api/v1/keys`;
+  private readonly API_URL = `${environment.apiUrl}/v1/keys`;
 
   constructor(private http: HttpClient) {}
 

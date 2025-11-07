@@ -80,6 +80,8 @@ public class SecureBoxDbContext : DbContext
                   .HasForeignKey(e => e.AccessedBy)
                   .OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(e => e.AccessedAt);
+            // Match the query filter on Key entity to avoid issues with filtered required relationships
+            entity.HasQueryFilter(e => e.Key.DeletedAt == null);
         });
         
         // AuditTrail configuration
@@ -103,6 +105,8 @@ public class SecureBoxDbContext : DbContext
                   .WithMany(e => e.UserRoles)
                   .HasForeignKey(e => e.RoleId)
                   .OnDelete(DeleteBehavior.Cascade);
+            // Match the query filter on Role entity to avoid issues with filtered required relationships
+            entity.HasQueryFilter(e => e.Role.DeletedAt == null);
         });
         
         // RolePermission configuration
@@ -118,6 +122,8 @@ public class SecureBoxDbContext : DbContext
                   .WithMany(e => e.RolePermissions)
                   .HasForeignKey(e => e.PermissionId)
                   .OnDelete(DeleteBehavior.Cascade);
+            // Match the query filter on Role entity to avoid issues with filtered required relationships
+            entity.HasQueryFilter(e => e.Role.DeletedAt == null);
         });
     }
 }
