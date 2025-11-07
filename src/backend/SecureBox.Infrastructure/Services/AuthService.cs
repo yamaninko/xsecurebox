@@ -299,29 +299,171 @@ public class AuthService : IAuthService
 
 public class UserService : IUserService
 {
-    public Task<IEnumerable<UserDto>> GetAllUsersAsync(UserQueryParams queryParams)
+    private readonly SecureBoxDbContext _dbContext;
+    private readonly ILogger<UserService> _logger;
+
+    public UserService(SecureBoxDbContext dbContext, ILogger<UserService> logger)
     {
-        throw new NotImplementedException();
+        _dbContext = dbContext;
+        _logger = logger;
+    }
+
+    public async Task<IEnumerable<UserDto>> GetAllUsersAsync(UserQueryParams queryParams)
+    {
+        var query = _dbContext.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(queryParams.Search))
+        {
+            query = query.Where(u => u.Username.Contains(queryParams.Search) || 
+                                     u.Email.Contains(queryParams.Search));
+        }
+
+        if (queryParams.IsActive.HasValue)
+        {
+            query = query.Where(u => u.IsActive == queryParams.IsActive.Value);
+        }
+
+        var users = await query
+            .Skip((queryParams.Page - 1) * queryParams.PageSize)
+            .Take(queryParams.PageSize)
+            .Select(u => new UserDto(
+                u.UserId,
+                u.Username,
+                u.Email,
+                u.FirstName,
+                u.LastName,
+                u.IsActive,
+                u.UserRoles.Select(ur => ur.Role!.RoleName).ToList(),
+                u.CreatedAt,
+                u.LastLoginAt
+            ))
+            .ToListAsync();
+
+        return users;
     }
     
-    public Task<UserDto?> GetUserByIdAsync(Guid userId)
+    public async Task<UserDto?> GetUserByIdAsync(Guid userId)
     {
-        throw new NotImplementedException();
+        var user = await _dbContext.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        if (user == null) return null;
+
+        return new UserDto(
+            user.UserId,
+            user.Username,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.IsActive,
+            user.UserRoles.Select(ur => ur.Role!.RoleName).ToList(),
+            user.CreatedAt,
+            user.LastLoginAt
+        );
     }
     
-    public Task<UserDto> CreateUserAsync(CreateUserRequest request)
+    public async Task<UserDto> CreateUserAsync(CreateUserRequest request)
     {
-        throw new NotImplementedException();
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        
+        var user = new User
+        {
+            UserId = Guid.NewGuid(),
+            Username = request.Username,
+            Email = request.Email,
+            PasswordHash = passwordHash,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+
+        return new UserDto(
+            user.UserId,
+            user.Username,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.IsActive,
+            new List<string>(),
+            user.CreatedAt,
+            user.LastLoginAt
+        );
     }
     
-    public Task<UserDto> UpdateUserAsync(Guid userId, UpdateUserRequest request)
+    public async Task<UserDto> UpdateUserAsync(Guid userId, UpdateUserRequest request)
     {
-        throw new NotImplementedException();
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null) throw new KeyNotFoundException("User not found");
+
+        if (request.Email != null) user.Email = request.Email;
+        if (request.FirstName != null) user.FirstName = request.FirstName;
+        if (request.LastName != null) user.LastName = request.LastName;
+        if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
+
+        user.UpdatedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        return new UserDto(
+            user.UserId,
+            user.Username,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.IsActive,
+            new List<string>(),
+            user.CreatedAt,
+            user.LastLoginAt
+        );
     }
     
-    public Task DeleteUserAsync(Guid userId)
+    public async Task DeleteUserAsync(Guid userId)
     {
-        throw new NotImplementedException();
+        var user = await _dbContext.Users.FindAsync(userId);
+        if (user == null) throw new KeyNotFoundException("User not found");
+
+        user.DeletedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task AssignRoleToUserAsync(Guid userId, Guid roleId, Guid assignedBy)
+    {
+        var exists = await _dbContext.UserRoles
+            .AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+
+        if (exists) return;
+
+        _dbContext.UserRoles.Add(new UserRole
+        {
+            UserRoleId = Guid.NewGuid(),
+            UserId = userId,
+            RoleId = roleId,
+            AssignedAt = DateTime.UtcNow,
+            AssignedBy = assignedBy
+        });
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId)
+    {
+        var userRole = await _dbContext.UserRoles
+            .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+
+        if (userRole != null)
+        {
+            _dbContext.UserRoles.Remove(userRole);
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }
 
