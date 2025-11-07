@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: securebox
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - postgres-deployment.yaml
+  - mongodb-deployment.yaml
+  - redis-deployment.yaml
+  - rabbitmq-deployment.yaml
+  - api-deployment.yaml
+  - portal-deployment.yaml
+  - nginx-configmap.yaml
+  - nginx-deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/name: securebox
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+  - name: ${GTECH_REPO_URL}/securebox/api
+    newTag: latest
+  - name: ${GTECH_REPO_URL}/securebox/portal
+    newTag: latest
+

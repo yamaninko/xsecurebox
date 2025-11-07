@@ -1,0 +1,164 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_run:
+    workflows: ["Build and Push to Harbor"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  REGISTRY: ${{ secrets.GTECH_REPO_URL }}
+  KUBECTL_VERSION: 'v1.28.0'
+
+jobs:
+  deploy:
+    name: Deploy to K8s
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    environment:
+      name: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace securebox --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create Harbor registry secret
+        run: |
+          kubectl create secret docker-registry harbor-registry-secret \
+            --docker-server=${{ secrets.GTECH_REPO_URL }} \
+            --docker-username=${{ secrets.GTECH_REPO_USERNAME }} \
+            --docker-password=${{ secrets.GTECH_REPO_TOKEN }} \
+            --namespace=securebox \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update ConfigMap with environment variables
+        run: |
+          # Replace placeholder with actual registry URL
+          find kubernetes/base -type f -name '*.yaml' -exec sed -i "s|\${GTECH_REPO_URL}|${{ secrets.GTECH_REPO_URL }}|g" {} +
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f kubernetes/base/namespace.yaml
+          kubectl apply -f kubernetes/base/configmap.yaml
+          kubectl apply -f kubernetes/base/secrets.yaml
+          kubectl apply -f kubernetes/base/postgres-deployment.yaml
+          kubectl apply -f kubernetes/base/mongodb-deployment.yaml
+          kubectl apply -f kubernetes/base/redis-deployment.yaml
+          kubectl apply -f kubernetes/base/rabbitmq-deployment.yaml
+          kubectl wait --for=condition=ready pod -l app=postgres -n securebox --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=mongodb -n securebox --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=redis -n securebox --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=rabbitmq -n securebox --timeout=300s
+          kubectl apply -f kubernetes/base/api-deployment.yaml
+          kubectl apply -f kubernetes/base/portal-deployment.yaml
+          kubectl apply -f kubernetes/base/nginx-configmap.yaml
+          kubectl apply -f kubernetes/base/nginx-deployment.yaml
+
+      - name: Wait for API deployment
+        run: |
+          kubectl rollout status deployment/securebox-api -n securebox --timeout=300s
+
+      - name: Wait for Portal deployment
+        run: |
+          kubectl rollout status deployment/securebox-portal -n securebox --timeout=300s
+
+      - name: Wait for Nginx deployment
+        run: |
+          kubectl rollout status deployment/nginx -n securebox --timeout=300s
+
+      - name: Verify deployments
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployments -n securebox
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n securebox
+          echo ""
+          echo "=== Services ==="
+          kubectl get services -n securebox
+          echo ""
+          echo "=== Ingress ==="
+          kubectl get ingress -n securebox
+
+      - name: Run smoke tests
+        run: |
+          # Get the LoadBalancer IP or use port-forward for testing
+          NGINX_SERVICE=$(kubectl get svc nginx-service -n securebox -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          
+          if [ -z "$NGINX_SERVICE" ]; then
+            echo "LoadBalancer IP not available yet, using port-forward for testing..."
+            kubectl port-forward -n securebox svc/nginx-service 8080:80 &
+            sleep 5
+            NGINX_SERVICE="localhost:8080"
+          fi
+          
+          echo "Testing API health endpoint..."
+          curl -f http://${NGINX_SERVICE}/api/health || exit 1
+          
+          echo "Testing Portal..."
+          curl -f http://${NGINX_SERVICE}/ || exit 1
+          
+          echo "✅ Smoke tests passed!"
+
+      - name: Deployment Success Notification
+        if: success()
+        run: |
+          echo "✅ Deployment başarılı!"
+          echo "Namespace: securebox"
+          echo "Environment: ${{ github.event.inputs.environment || 'dev' }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          kubectl get pods -n securebox
+          kubectl get services -n securebox
+
+      - name: Deployment Failure Notification
+        if: failure()
+        run: |
+          echo "❌ Deployment başarısız!"
+          echo "Namespace: securebox"
+          echo "Environment: ${{ github.event.inputs.environment || 'dev' }}"
+          kubectl get pods -n securebox
+          kubectl describe pods -n securebox
+          kubectl logs -n securebox -l app=securebox-api --tail=100
+
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          echo "Rolling back deployment..."
+          kubectl rollout undo deployment/securebox-api -n securebox
+          kubectl rollout undo deployment/securebox-portal -n securebox
+          kubectl rollout undo deployment/nginx -n securebox
+
