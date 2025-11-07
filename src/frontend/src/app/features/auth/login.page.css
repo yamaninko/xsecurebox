@@ -82,6 +82,11 @@ mat-form-field {
   margin-bottom: 16px;
 }
 
+/* Remember Me */
+.remember-me-container {
+  margin: 8px 0 16px 0;
+}
+
 /* Login Button */
 .login-button {
   width: 100%;

@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../core/auth/auth.service';
@@ -24,6 +25,7 @@ import { AuthService } from '../../core/auth/auth.service';
     MatInputModule,
     MatButtonModule,
     MatIconModule,
+    MatCheckboxModule,
     MatProgressSpinnerModule,
     MatSnackBarModule
   ]
@@ -41,9 +43,15 @@ export class LoginPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Check for saved credentials
+    const savedUsername = localStorage.getItem('saved_username');
+    const savedPassword = localStorage.getItem('saved_password');
+    const rememberMe = localStorage.getItem('remember_me') === 'true';
+
     this.loginForm = this.fb.group({
-      username: ['', [Validators.required, Validators.minLength(3)]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      username: [savedUsername || '', [Validators.required, Validators.minLength(3)]],
+      password: [savedPassword || '', [Validators.required, Validators.minLength(6)]],
+      rememberMe: [rememberMe]
     });
   }
 
@@ -54,7 +62,18 @@ export class LoginPageComponent implements OnInit {
     }
 
     this.isLoading = true;
-    const { username, password } = this.loginForm.value;
+    const { username, password, rememberMe } = this.loginForm.value;
+
+    // Save credentials if "Remember Me" is checked
+    if (rememberMe) {
+      localStorage.setItem('saved_username', username);
+      localStorage.setItem('saved_password', password);
+      localStorage.setItem('remember_me', 'true');
+    } else {
+      localStorage.removeItem('saved_username');
+      localStorage.removeItem('saved_password');
+      localStorage.removeItem('remember_me');
+    }
 
     this.authService.login(username, password).subscribe({
       next: (response) => {
