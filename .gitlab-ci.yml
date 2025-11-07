@@ -50,6 +50,7 @@ build_api:
   only:
     - main
     - develop
+    - development
     - merge_requests
   retry:
     max: 2
@@ -83,6 +84,7 @@ build_portal:
   only:
     - main
     - develop
+    - development
     - merge_requests
   retry:
     max: 2
@@ -117,6 +119,7 @@ test_api:
   only:
     - main
     - develop
+    - development
     - merge_requests
 
 test_portal:
@@ -142,6 +145,7 @@ test_portal:
   only:
     - main
     - develop
+    - development
     - merge_requests
 
 # ============================================================================
@@ -173,6 +177,7 @@ push_api:
   only:
     - main
     - develop
+    - development
   retry:
     max: 2
     when:
@@ -203,6 +208,7 @@ push_portal:
   only:
     - main
     - develop
+    - development
   retry:
     max: 2
     when:
@@ -258,6 +264,7 @@ deploy_dev:
     - echo "Deployment to DEV completed successfully!"
   only:
     - develop
+    - development
   when: manual
   retry:
     max: 1
@@ -337,6 +344,7 @@ cleanup_dev:
   when: manual
   only:
     - develop
+    - development
 
 cleanup_production:
   stage: cleanup
@@ -370,3 +378,4 @@ cleanup_docker:
   only:
     - main
     - develop
+    - development
