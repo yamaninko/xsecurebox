@@ -1,7 +1,5 @@
 # Secure Box GitLab CI/CD Pipeline
-# Bu pipeline kodu build eder, test eder ve Kubernetes'e deploy eder
 
-# Pipeline Stages
 stages:
   - build
   - test
@@ -9,35 +7,18 @@ stages:
   - deploy
   - cleanup
 
-# Global Variables
 variables:
-  # Docker
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_BUILDKIT: "1"
-  
-  # Image Names
   API_IMAGE: "${GTECH_REPO_URL}/securebox/api"
   PORTAL_IMAGE: "${GTECH_REPO_URL}/securebox/portal"
-  
-  # Kubernetes
   KUBE_NAMESPACE: "securebox"
-  
-  # Build Cache
-  CACHE_COMPRESSION_LEVEL: "fast"
 
-# Global Cache Configuration
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - .cache/
-
-# Before Script (tüm job'larda çalışır)
-before_script:
-  - echo "🚀 Starting CI/CD Pipeline"
-  - echo "Branch: $CI_COMMIT_REF_NAME"
-  - echo "Commit: $CI_COMMIT_SHORT_SHA"
-  - echo "Pipeline: $CI_PIPELINE_ID"
 
 # ============================================================================
 # BUILD STAGE
@@ -54,14 +35,10 @@ build:api:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-  before_script:
+  script:
     - echo "🔨 Building API Docker Image"
     - docker info
-  script:
-    # Login to Harbor
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
-    
-    # Build API image
     - cd src/backend/SecureBox.API
     - |
       docker build \
@@ -73,21 +50,16 @@ build:api:
         --tag $API_IMAGE:$CI_COMMIT_REF_SLUG \
         --file Dockerfile \
         ..
-    
-    # Save image for next stage
     - docker save $API_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > api-image.tar.gz
-  
   artifacts:
     name: "api-image-$CI_COMMIT_SHORT_SHA"
     paths:
       - api-image.tar.gz
     expire_in: 1 hour
-  
   only:
     - main
     - develop
     - merge_requests
-  
   retry:
     max: 2
     when:
@@ -105,14 +77,10 @@ build:portal:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-  before_script:
+  script:
     - echo "🎨 Building Portal Docker Image"
     - docker info
-  script:
-    # Login to Harbor
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
-    
-    # Build Portal image
     - cd src/frontend
     - |
       docker build \
@@ -124,21 +92,16 @@ build:portal:
         --tag $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG \
         --file Dockerfile \
         .
-    
-    # Save image for next stage
     - docker save $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > portal-image.tar.gz
-  
   artifacts:
     name: "portal-image-$CI_COMMIT_SHORT_SHA"
     paths:
       - portal-image.tar.gz
     expire_in: 1 hour
-  
   only:
     - main
     - develop
     - merge_requests
-  
   retry:
     max: 2
     when:
@@ -154,16 +117,13 @@ test:api:
   image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
-  before_script:
-    - echo "🧪 Running API Tests"
   script:
+    - echo "🧪 Running API Tests"
     - cd src/backend
     - dotnet restore
     - dotnet build --no-restore
     - dotnet test --no-build --verbosity normal
-  
   coverage: '/Total\s+\|\s+(\d+\.?\d*)%/'
-  
   artifacts:
     when: always
     reports:
@@ -172,44 +132,35 @@ test:api:
         coverage_format: cobertura
         path: src/backend/**/TestResults/coverage.cobertura.xml
     expire_in: 7 days
-  
   only:
     - main
     - develop
     - merge_requests
-  
-  allow_failure: false
 
 test:portal:
   stage: test
   image: node:20-alpine
   tags:
     - docker
-  before_script:
-    - echo "🧪 Running Portal Tests"
   script:
+    - echo "🧪 Running Portal Tests"
     - cd src/frontend
     - npm ci
     - npm run test -- --watch=false --browsers=ChromeHeadless
     - npm run lint
-  
   artifacts:
     when: always
     reports:
       junit: src/frontend/test-results/*.xml
     expire_in: 7 days
-  
   cache:
     key: ${CI_COMMIT_REF_SLUG}-node
     paths:
       - src/frontend/node_modules/
-  
   only:
     - main
     - develop
     - merge_requests
-  
-  allow_failure: false
 
 # ============================================================================
 # PUSH STAGE
@@ -228,40 +179,26 @@ push:api:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-  before_script:
-    - echo "📤 Pushing API Image to Harbor"
   script:
-    # Login to Harbor
+    - echo "📤 Pushing API Image to Harbor"
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
-    
-    # Load image from artifact
     - docker load < api-image.tar.gz
-    
-    # Tag and push
     - docker push $API_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $API_IMAGE:$CI_COMMIT_REF_SLUG
-    
-    # Tag as latest for main branch
     - |
       if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
         docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest
         docker push $API_IMAGE:latest
         echo "✅ Pushed as latest tag"
       fi
-    
-    # Print image info
     - echo "✅ API Image pushed successfully!"
     - echo "Image: $API_IMAGE:$CI_COMMIT_SHORT_SHA"
-    - docker images | grep securebox
-  
   only:
     - main
     - develop
-  
   retry:
     max: 2
-    when:
-      - runner_system_failure
+    when: runner_system_failure
 
 push:portal:
   stage: push
@@ -276,40 +213,26 @@ push:portal:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
-  before_script:
-    - echo "📤 Pushing Portal Image to Harbor"
   script:
-    # Login to Harbor
+    - echo "📤 Pushing Portal Image to Harbor"
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
-    
-    # Load image from artifact
     - docker load < portal-image.tar.gz
-    
-    # Tag and push
     - docker push $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG
-    
-    # Tag as latest for main branch
     - |
       if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
         docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest
         docker push $PORTAL_IMAGE:latest
         echo "✅ Pushed as latest tag"
       fi
-    
-    # Print image info
     - echo "✅ Portal Image pushed successfully!"
     - echo "Image: $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
-    - docker images | grep securebox
-  
   only:
     - main
     - develop
-  
   retry:
     max: 2
-    when:
-      - runner_system_failure
+    when: runner_system_failure
 
 # ============================================================================
 # DEPLOY STAGE
@@ -324,20 +247,14 @@ deploy:dev:
     name: development
     url: http://dev.securebox.local
     on_stop: cleanup:dev
-  before_script:
-    - echo "🚀 Deploying to Development Environment"
   script:
-    # Setup kubectl
+    - echo "🚀 Deploying to Development Environment"
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG_DEV" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
     - kubectl version --client
     - kubectl cluster-info
-    
-    # Create namespace if not exists
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-    
-    # Create Harbor registry secret
     - |
       kubectl create secret docker-registry harbor-registry-secret \
         --docker-server=$GTECH_REPO_URL \
@@ -345,62 +262,35 @@ deploy:dev:
         --docker-password=$GTECH_REPO_TOKEN \
         --namespace=$KUBE_NAMESPACE \
         --dry-run=client -o yaml | kubectl apply -f -
-    
-    # Update image references
     - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
     - sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml
-    
-    # Apply ConfigMap and Secrets
     - kubectl apply -f kubernetes/base/configmap.yaml
     - kubectl apply -f kubernetes/base/secrets.yaml
-    
-    # Deploy Databases
     - kubectl apply -f kubernetes/base/postgres-deployment.yaml
     - kubectl apply -f kubernetes/base/mongodb-deployment.yaml
     - kubectl apply -f kubernetes/base/redis-deployment.yaml
     - kubectl apply -f kubernetes/base/rabbitmq-deployment.yaml
-    
-    # Wait for databases
     - kubectl wait --for=condition=ready pod -l app=postgres -n $KUBE_NAMESPACE --timeout=300s || true
     - kubectl wait --for=condition=ready pod -l app=mongodb -n $KUBE_NAMESPACE --timeout=300s || true
     - kubectl wait --for=condition=ready pod -l app=redis -n $KUBE_NAMESPACE --timeout=300s || true
     - kubectl wait --for=condition=ready pod -l app=rabbitmq -n $KUBE_NAMESPACE --timeout=300s || true
-    
-    # Deploy Application
     - kubectl apply -f kubernetes/base/api-deployment.yaml
     - kubectl apply -f kubernetes/base/portal-deployment.yaml
     - kubectl apply -f kubernetes/base/nginx-configmap.yaml
     - kubectl apply -f kubernetes/base/nginx-deployment.yaml
-    
-    # Wait for rollout
     - kubectl rollout status deployment/securebox-api -n $KUBE_NAMESPACE --timeout=300s
     - kubectl rollout status deployment/securebox-portal -n $KUBE_NAMESPACE --timeout=300s
     - kubectl rollout status deployment/nginx -n $KUBE_NAMESPACE --timeout=300s
-    
-    # Show deployment status
     - echo "📊 Deployment Status:"
     - kubectl get deployments -n $KUBE_NAMESPACE
     - kubectl get pods -n $KUBE_NAMESPACE
     - kubectl get services -n $KUBE_NAMESPACE
-    
-    # Run smoke tests
-    - echo "🧪 Running smoke tests..."
-    - NGINX_IP=$(kubectl get svc nginx-service -n $KUBE_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || echo "pending")
-    - echo "LoadBalancer IP: $NGINX_IP"
-    - |
-      if [ "$NGINX_IP" != "pending" ]; then
-        curl -f http://$NGINX_IP/api/health || echo "⚠️ Health check failed"
-      fi
-    
     - echo "✅ Deployment to DEV completed successfully!"
-  
   only:
     - develop
-  
   when: manual
-  
   retry:
     max: 1
     when: runner_system_failure
@@ -414,20 +304,14 @@ deploy:production:
     name: production
     url: https://securebox.example.com
     on_stop: cleanup:production
-  before_script:
-    - echo "🚀 Deploying to Production Environment"
   script:
-    # Setup kubectl
+    - echo "🚀 Deploying to Production Environment"
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG_PROD" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
     - kubectl version --client
     - kubectl cluster-info
-    
-    # Create namespace if not exists
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-    
-    # Create Harbor registry secret
     - |
       kubectl create secret docker-registry harbor-registry-secret \
         --docker-server=$GTECH_REPO_URL \
@@ -435,62 +319,35 @@ deploy:production:
         --docker-password=$GTECH_REPO_TOKEN \
         --namespace=$KUBE_NAMESPACE \
         --dry-run=client -o yaml | kubectl apply -f -
-    
-    # Update image references
     - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
     - sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml
-    
-    # Apply ConfigMap and Secrets (production values)
     - kubectl apply -f kubernetes/base/configmap.yaml
     - kubectl apply -f kubernetes/base/secrets.yaml
-    
-    # Deploy Databases (if not exists)
     - kubectl apply -f kubernetes/base/postgres-deployment.yaml
     - kubectl apply -f kubernetes/base/mongodb-deployment.yaml
     - kubectl apply -f kubernetes/base/redis-deployment.yaml
     - kubectl apply -f kubernetes/base/rabbitmq-deployment.yaml
-    
-    # Wait for databases
     - kubectl wait --for=condition=ready pod -l app=postgres -n $KUBE_NAMESPACE --timeout=300s || true
     - kubectl wait --for=condition=ready pod -l app=mongodb -n $KUBE_NAMESPACE --timeout=300s || true
     - kubectl wait --for=condition=ready pod -l app=redis -n $KUBE_NAMESPACE --timeout=300s || true
     - kubectl wait --for=condition=ready pod -l app=rabbitmq -n $KUBE_NAMESPACE --timeout=300s || true
-    
-    # Deploy Application with Rolling Update
     - kubectl apply -f kubernetes/base/api-deployment.yaml
     - kubectl apply -f kubernetes/base/portal-deployment.yaml
     - kubectl apply -f kubernetes/base/nginx-configmap.yaml
     - kubectl apply -f kubernetes/base/nginx-deployment.yaml
-    
-    # Wait for rollout
     - kubectl rollout status deployment/securebox-api -n $KUBE_NAMESPACE --timeout=600s
     - kubectl rollout status deployment/securebox-portal -n $KUBE_NAMESPACE --timeout=600s
     - kubectl rollout status deployment/nginx -n $KUBE_NAMESPACE --timeout=600s
-    
-    # Show deployment status
     - echo "📊 Production Deployment Status:"
     - kubectl get deployments -n $KUBE_NAMESPACE
     - kubectl get pods -n $KUBE_NAMESPACE
     - kubectl get services -n $KUBE_NAMESPACE
-    - kubectl get ingress -n $KUBE_NAMESPACE
-    
-    # Run smoke tests
-    - echo "🧪 Running production smoke tests..."
-    - NGINX_IP=$(kubectl get svc nginx-service -n $KUBE_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-    - echo "LoadBalancer IP: $NGINX_IP"
-    - curl -f http://$NGINX_IP/api/health
-    - curl -f http://$NGINX_IP/
-    
     - echo "✅ Production Deployment completed successfully!"
-    - echo "🌐 Application URL: https://securebox.example.com"
-  
   only:
     - main
-  
   when: manual
-  
   retry:
     max: 1
     when: runner_system_failure
@@ -507,16 +364,13 @@ cleanup:dev:
   environment:
     name: development
     action: stop
-  before_script:
-    - echo "🧹 Cleaning up Development Environment"
   script:
+    - echo "🧹 Cleaning up Development Environment"
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG_DEV" | base64 -d > ~/.kube/config
     - kubectl delete namespace $KUBE_NAMESPACE --ignore-not-found=true
     - echo "✅ Development environment cleaned up"
-  
   when: manual
-  
   only:
     - develop
 
@@ -528,15 +382,10 @@ cleanup:production:
   environment:
     name: production
     action: stop
-  before_script:
-    - echo "⚠️ Cleaning up Production Environment"
   script:
-    - echo "❌ Production cleanup is disabled for safety"
-    - echo "Please manually delete resources if needed"
+    - echo "⚠️ Production cleanup is disabled for safety"
     - exit 1
-  
   when: manual
-  
   only:
     - main
 
@@ -547,52 +396,13 @@ cleanup:docker:
     - docker:24-dind
   tags:
     - docker
-  before_script:
-    - echo "🧹 Cleaning up Docker resources"
   script:
+    - echo "🧹 Cleaning up Docker resources"
     - docker system prune -af --volumes
     - docker builder prune -af
     - echo "✅ Docker cleanup completed"
-  
   when: always
-  
   allow_failure: true
-  
   only:
     - main
     - develop
-
-# ============================================================================
-# NOTIFICATION (Optional - webhook veya email ile bildirim)
-# ============================================================================
-
-.notify_success:
-  stage: .post
-  image: curlimages/curl:latest
-  tags:
-    - docker
-  script:
-    - |
-      echo "✅ Pipeline başarılı!"
-      echo "Branch: $CI_COMMIT_REF_NAME"
-      echo "Commit: $CI_COMMIT_SHORT_SHA"
-      echo "Pipeline URL: $CI_PIPELINE_URL"
-      # Webhook notification (opsiyonel)
-      # curl -X POST "$WEBHOOK_URL" -d "Pipeline başarılı: $CI_PIPELINE_URL"
-  when: on_success
-
-.notify_failure:
-  stage: .post
-  image: curlimages/curl:latest
-  tags:
-    - docker
-  script:
-    - |
-      echo "❌ Pipeline başarısız!"
-      echo "Branch: $CI_COMMIT_REF_NAME"
-      echo "Commit: $CI_COMMIT_SHORT_SHA"
-      echo "Pipeline URL: $CI_PIPELINE_URL"
-      # Webhook notification (opsiyonel)
-      # curl -X POST "$WEBHOOK_URL" -d "Pipeline başarısız: $CI_PIPELINE_URL"
-  when: on_failure
-
