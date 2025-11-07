@@ -1,0 +1,267 @@
+<div class="api-clients-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>🔌 API Clients</h1>
+      <p class="subtitle">OAuth 2.0 Client Credentials ve API Key yönetimi</p>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-secondary" (click)="openTokenTestModal()">
+        🧪 Token Test
+      </button>
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        ➕ Yeni Client
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Yükleniyor...</p>
+  </div>
+
+  <div *ngIf="!loading" class="clients-list">
+    <div *ngFor="let client of clients" class="client-card">
+      <div class="client-header">
+        <div class="client-info">
+          <h3>{{ client.clientName }}</h3>
+          <p class="client-id">Client ID: <code>{{ client.clientIdString }}</code></p>
+          <p *ngIf="client.description" class="client-desc">{{ client.description }}</p>
+        </div>
+        <span class="status-badge" [ngClass]="getStatusBadgeClass(client)">
+          {{ getStatusText(client) }}
+        </span>
+      </div>
+
+      <div class="client-details">
+        <div class="detail-row">
+          <div class="detail-item">
+            <span class="label">👤 Oluşturan:</span>
+            <span class="value">{{ client.createdByUsername }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">📅 Oluşturulma:</span>
+            <span class="value">{{ client.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-row">
+          <div class="detail-item">
+            <span class="label">⚡ Son Kullanım:</span>
+            <span class="value">{{ client.lastUsedAt ? (client.lastUsedAt | date:'dd/MM/yyyy HH:mm') : 'Hiç' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">📊 Toplam İstek:</span>
+            <span class="value">{{ client.totalRequests }}</span>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-item">
+            <span class="label">🔒 Scopes:</span>
+            <div class="scopes">
+              <span *ngFor="let scope of client.scopes" class="scope-badge">{{ scope }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-item">
+            <span class="label">⏱️ Rate Limit:</span>
+            <span class="value">{{ client.rateLimitPerMinute }}/dk - {{ client.rateLimitPerHour }}/sa</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="client-actions">
+        <button class="btn-sm btn-primary" (click)="toggleClientStatus(client)" *ngIf="!client.revokedAt">
+          {{ client.isActive ? '⏸️ Durdur' : '▶️ Başlat' }}
+        </button>
+        <button class="btn-sm btn-warning" (click)="regenerateSecret(client)" *ngIf="!client.revokedAt">
+          🔄 Secret Yenile
+        </button>
+        <button class="btn-sm btn-warning" (click)="regenerateApiKey(client)" *ngIf="!client.revokedAt">
+          🔑 API Key Yenile
+        </button>
+        <button class="btn-sm btn-danger" (click)="revokeClient(client)" *ngIf="!client.revokedAt">
+          🚫 İptal Et
+        </button>
+        <button class="btn-sm btn-danger" (click)="deleteClient(client)">
+          🗑️ Sil
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="clients.length === 0" class="no-clients">
+      <span class="no-data-icon">📭</span>
+      <p>Henüz API client oluşturulmamış</p>
+      <button class="btn btn-primary" (click)="openCreateModal()">İlk Client'ı Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Client Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal-content large-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🔌 Yeni API Client</h2>
+      <button class="btn-close" (click)="closeCreateModal()">✖</button>
+    </div>
+    <form (ngSubmit)="createClient()">
+      <div class="form-group">
+        <label>Client Adı *</label>
+        <input type="text" [(ngModel)]="newClient.clientName" name="clientName" required class="form-input" placeholder="Örn: Mobile App, Web Dashboard">
+      </div>
+
+      <div class="form-group">
+        <label>Açıklama</label>
+        <textarea [(ngModel)]="newClient.description" name="description" class="form-input" rows="2" placeholder="Client hakkında kısa açıklama"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>İzinler (Scopes) *</label>
+        <div class="scopes-grid">
+          <div *ngFor="let scope of availableScopes" class="scope-option" [class.selected]="isScopeSelected(scope.value)" (click)="toggleScope(scope.value)">
+            <div class="scope-checkbox">
+              <span *ngIf="isScopeSelected(scope.value)">✓</span>
+            </div>
+            <div class="scope-info">
+              <div class="scope-label">{{ scope.label }}</div>
+              <div class="scope-description">{{ scope.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Rate Limit (Dakika) *</label>
+          <input type="number" [(ngModel)]="newClient.rateLimitPerMinute" name="rateLimitPerMinute" required min="1" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Rate Limit (Saat) *</label>
+          <input type="number" [(ngModel)]="newClient.rateLimitPerHour" name="rateLimitPerHour" required min="1" class="form-input">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">İptal</button>
+        <button type="submit" class="btn btn-primary">Oluştur</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Credentials Modal -->
+<div class="modal-overlay" *ngIf="showCredentialsModal" (click)="closeCredentialsModal()">
+  <div class="modal-content credentials-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🔐 Client Credentials</h2>
+      <button class="btn-close" (click)="closeCredentialsModal()">✖</button>
+    </div>
+    <div class="credentials-content">
+      <div class="warning-box">
+        <span class="warning-icon">⚠️</span>
+        <div>
+          <strong>ÖNEMLİ:</strong> Bu bilgiler sadece bir kez gösterilir! Lütfen güvenli bir yerde saklayın.
+        </div>
+      </div>
+
+      <div class="credential-item" *ngIf="currentCredentials.clientId">
+        <label>Client ID</label>
+        <div class="credential-value">
+          <code>{{ currentCredentials.clientId }}</code>
+          <button class="btn-copy" (click)="copyToClipboard(currentCredentials.clientId, 'Client ID')">📋</button>
+        </div>
+      </div>
+
+      <div class="credential-item" *ngIf="currentCredentials.clientSecret">
+        <label>Client Secret</label>
+        <div class="credential-value">
+          <code class="secret">{{ currentCredentials.clientSecret }}</code>
+          <button class="btn-copy" (click)="copyToClipboard(currentCredentials.clientSecret, 'Client Secret')">📋</button>
+        </div>
+      </div>
+
+      <div class="credential-item" *ngIf="currentCredentials.apiKey">
+        <label>API Key</label>
+        <div class="credential-value">
+          <code class="secret">{{ currentCredentials.apiKey }}</code>
+          <button class="btn-copy" (click)="copyToClipboard(currentCredentials.apiKey, 'API Key')">📋</button>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <p><strong>Kullanım:</strong></p>
+        <ul>
+          <li><strong>OAuth 2.0:</strong> Client ID ve Secret ile token alın</li>
+          <li><strong>API Key:</strong> Doğrudan X-API-Key header'ı ile kullanın</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" (click)="closeCredentialsModal()">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<!-- Token Test Modal -->
+<div class="modal-overlay" *ngIf="showTokenTestModal" (click)="closeTokenTestModal()">
+  <div class="modal-content large-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🧪 Token Test Aracı</h2>
+      <button class="btn-close" (click)="closeTokenTestModal()">✖</button>
+    </div>
+    <div class="token-test-content">
+      <form (ngSubmit)="testToken()">
+        <div class="form-group">
+          <label>Client ID *</label>
+          <input type="text" [(ngModel)]="tokenTest.clientId" name="clientId" required class="form-input" placeholder="cli_...">
+        </div>
+
+        <div class="form-group">
+          <label>Client Secret *</label>
+          <input type="password" [(ngModel)]="tokenTest.clientSecret" name="clientSecret" required class="form-input" placeholder="cs_...">
+        </div>
+
+        <div class="form-group">
+          <label>Scope (Opsiyonel)</label>
+          <input type="text" [(ngModel)]="tokenTest.scope" name="scope" class="form-input" placeholder="keys:read keys:write">
+          <small>Birden fazla scope için boşluk ile ayırın</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="tokenTest.loading">
+          {{ tokenTest.loading ? '⏳ Test Ediliyor...' : '🚀 Token Al' }}
+        </button>
+      </form>
+
+      <div *ngIf="tokenTest.result" class="test-result">
+        <div *ngIf="tokenTest.result.success" class="result-success">
+          <h4>✅ Başarılı!</h4>
+          <div class="result-item">
+            <label>Access Token:</label>
+            <code class="result-code">{{ tokenTest.result.data.access_token }}</code>
+            <button class="btn-copy" (click)="copyToClipboard(tokenTest.result.data.access_token, 'Access Token')">📋</button>
+          </div>
+          <div class="result-item">
+            <label>Token Type:</label>
+            <span>{{ tokenTest.result.data.token_type }}</span>
+          </div>
+          <div class="result-item">
+            <label>Expires In:</label>
+            <span>{{ tokenTest.result.data.expires_in }} saniye</span>
+          </div>
+          <div class="result-item">
+            <label>Scope:</label>
+            <span>{{ tokenTest.result.data.scope }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="!tokenTest.result.success" class="result-error">
+          <h4>❌ Hata!</h4>
+          <pre>{{ tokenTest.result.error | json }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

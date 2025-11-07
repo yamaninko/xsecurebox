@@ -15,6 +15,7 @@ export const routes: Routes = [
       { path: 'certificates', loadChildren: () => import('./features/certificates/certificates.module').then(m => m.CertificatesModule) },
       { path: 'users', loadChildren: () => import('./features/users/users.module').then(m => m.UsersModule) },
       { path: 'roles', loadChildren: () => import('./features/roles/roles.module').then(m => m.RolesModule) },
+      { path: 'api-clients', loadChildren: () => import('./features/api-clients/api-clients.module').then(m => m.ApiClientsModule) },
       { path: 'audit', loadChildren: () => import('./features/audit/audit.module').then(m => m.AuditModule) }
     ]
   },

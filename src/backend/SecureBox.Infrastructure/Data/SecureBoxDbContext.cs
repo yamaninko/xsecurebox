@@ -18,6 +18,8 @@ public class SecureBoxDbContext : DbContext
     public DbSet<Key> Keys { get; set; }
     public DbSet<KeyAccessLog> KeyAccessLogs { get; set; }
     public DbSet<AuditTrail> AuditTrails { get; set; }
+    public DbSet<ApiClient> ApiClients { get; set; }
+    public DbSet<ApiClientRequest> ApiClientRequests { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -124,6 +126,30 @@ public class SecureBoxDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
             // Match the query filter on Role entity to avoid issues with filtered required relationships
             entity.HasQueryFilter(e => e.Role.DeletedAt == null);
+        });
+        
+        // ApiClient configuration
+        modelBuilder.Entity<ApiClient>(entity =>
+        {
+            entity.HasKey(e => e.ClientId);
+            entity.HasIndex(e => e.ClientIdString).IsUnique();
+            entity.HasIndex(e => e.ApiKey).IsUnique();
+            entity.HasOne(e => e.Creator)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedBy)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        // ApiClientRequest configuration
+        modelBuilder.Entity<ApiClientRequest>(entity =>
+        {
+            entity.HasKey(e => e.RequestId);
+            entity.HasIndex(e => e.RequestedAt);
+            entity.HasIndex(e => e.ClientId);
+            entity.HasOne(e => e.Client)
+                  .WithMany(e => e.Requests)
+                  .HasForeignKey(e => e.ClientId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

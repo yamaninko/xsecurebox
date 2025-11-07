@@ -118,6 +118,7 @@ builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<IKeyService, KeyService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IApiClientService, ApiClientService>();
 builder.Services.AddSingleton<IMessageBrokerService, RabbitMQService>();
 
 // Health Checks

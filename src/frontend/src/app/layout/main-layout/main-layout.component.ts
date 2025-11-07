@@ -25,6 +25,7 @@ export class MainLayoutComponent implements OnInit {
     { icon: '📊', label: 'Dashboard', route: '/dashboard' },
     { icon: '🔑', label: 'Keys', route: '/keys' },
     { icon: '📜', label: 'Certificates', route: '/certificates' },
+    { icon: '🔌', label: 'API Clients', route: '/api-clients', roles: ['Admin'] },
     { icon: '👥', label: 'Users', route: '/users', roles: ['Admin'] },
     { icon: '🛡️', label: 'Roles', route: '/roles', roles: ['Admin'] },
     { icon: '📋', label: 'Audit', route: '/audit' }
