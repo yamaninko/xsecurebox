@@ -40,16 +40,7 @@ build:api:
     - docker info
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/backend/SecureBox.API
-    - |
-      docker build \
-        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-        --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA \
-        --build-arg VERSION=$CI_COMMIT_REF_NAME \
-        --cache-from $API_IMAGE:latest \
-        --tag $API_IMAGE:$CI_COMMIT_SHORT_SHA \
-        --tag $API_IMAGE:$CI_COMMIT_REF_SLUG \
-        --file Dockerfile \
-        ..
+    - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$CI_COMMIT_REF_NAME --cache-from $API_IMAGE:latest --tag $API_IMAGE:$CI_COMMIT_SHORT_SHA --tag $API_IMAGE:$CI_COMMIT_REF_SLUG --file Dockerfile ..
     - docker save $API_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > api-image.tar.gz
   artifacts:
     name: "api-image-$CI_COMMIT_SHORT_SHA"
@@ -82,16 +73,7 @@ build:portal:
     - docker info
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/frontend
-    - |
-      docker build \
-        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-        --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA \
-        --build-arg VERSION=$CI_COMMIT_REF_NAME \
-        --cache-from $PORTAL_IMAGE:latest \
-        --tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA \
-        --tag $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG \
-        --file Dockerfile \
-        .
+    - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$CI_COMMIT_REF_NAME --cache-from $PORTAL_IMAGE:latest --tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA --tag $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG --file Dockerfile .
     - docker save $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > portal-image.tar.gz
   artifacts:
     name: "portal-image-$CI_COMMIT_SHORT_SHA"
@@ -185,12 +167,7 @@ push:api:
     - docker load < api-image.tar.gz
     - docker push $API_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $API_IMAGE:$CI_COMMIT_REF_SLUG
-    - |
-      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
-        docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest
-        docker push $API_IMAGE:latest
-        echo "✅ Pushed as latest tag"
-      fi
+    - if [ "$CI_COMMIT_REF_NAME" == "main" ]; then docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest; docker push $API_IMAGE:latest; echo "✅ Pushed as latest tag"; fi
     - echo "✅ API Image pushed successfully!"
     - echo "Image: $API_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
@@ -219,12 +196,7 @@ push:portal:
     - docker load < portal-image.tar.gz
     - docker push $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG
-    - |
-      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
-        docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest
-        docker push $PORTAL_IMAGE:latest
-        echo "✅ Pushed as latest tag"
-      fi
+    - if [ "$CI_COMMIT_REF_NAME" == "main" ]; then docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest; docker push $PORTAL_IMAGE:latest; echo "✅ Pushed as latest tag"; fi
     - echo "✅ Portal Image pushed successfully!"
     - echo "Image: $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
@@ -255,13 +227,7 @@ deploy:dev:
     - kubectl version --client
     - kubectl cluster-info
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-    - |
-      kubectl create secret docker-registry harbor-registry-secret \
-        --docker-server=$GTECH_REPO_URL \
-        --docker-username=$GTECH_REPO_USERNAME \
-        --docker-password=$GTECH_REPO_TOKEN \
-        --namespace=$KUBE_NAMESPACE \
-        --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl create secret docker-registry harbor-registry-secret --docker-server=$GTECH_REPO_URL --docker-username=$GTECH_REPO_USERNAME --docker-password=$GTECH_REPO_TOKEN --namespace=$KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
     - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
     - sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
@@ -312,13 +278,7 @@ deploy:production:
     - kubectl version --client
     - kubectl cluster-info
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-    - |
-      kubectl create secret docker-registry harbor-registry-secret \
-        --docker-server=$GTECH_REPO_URL \
-        --docker-username=$GTECH_REPO_USERNAME \
-        --docker-password=$GTECH_REPO_TOKEN \
-        --namespace=$KUBE_NAMESPACE \
-        --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl create secret docker-registry harbor-registry-secret --docker-server=$GTECH_REPO_URL --docker-username=$GTECH_REPO_USERNAME --docker-password=$GTECH_REPO_TOKEN --namespace=$KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
     - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
     - sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
