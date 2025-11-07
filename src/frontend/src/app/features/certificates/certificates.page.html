@@ -1,0 +1,37 @@
+<div class="certificates-container">
+  <div class="certificates-header">
+    <div>
+      <h1>📜 Certificate Management</h1>
+      <p class="subtitle">Manage encryption certificates</p>
+    </div>
+    <button class="btn btn-primary" (click)="uploadCertificate()">
+      📤 Upload Certificate
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading certificates...</p>
+  </div>
+
+  <div *ngIf="!loading" class="certificates-grid">
+    <div *ngFor="let cert of certificates" class="cert-card">
+      <div class="cert-icon">📜</div>
+      <div class="cert-info">
+        <h3>{{ cert.name }}</h3>
+        <p class="cert-desc">{{ cert.description }}</p>
+        <div class="cert-details">
+          <p><strong>Subject:</strong> {{ cert.subject }}</p>
+          <p><strong>Issuer:</strong> {{ cert.issuer }}</p>
+          <p><strong>Valid:</strong> {{ cert.notBefore | date:'short' }} - {{ cert.notAfter | date:'short' }}</p>
+          <p><strong>Thumbprint:</strong> <code>{{ cert.thumbprint }}</code></p>
+        </div>
+        <span class="badge badge-success">{{ cert.status }}</span>
+      </div>
+      <div class="cert-actions">
+        <button class="btn-sm" (click)="revokeCertificate(cert)">Revoke</button>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -79,6 +79,10 @@ export class AuthService {
     return !!token && !this.isTokenExpired(token);
   }
 
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
   hasRole(role: string): boolean {
     const user = this.currentUserSubject.value;
     return user?.roles?.includes(role) ?? false;

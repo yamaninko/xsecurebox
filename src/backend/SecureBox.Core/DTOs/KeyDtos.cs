@@ -5,9 +5,15 @@ public record KeyDto(
     string Name,
     string? Description,
     string KeyType,
+    string EncryptionAlgorithm,
+    string EnvironmentTag,
+    List<string>? Tags,
     string Status,
     int Version,
+    DateTime ValidFrom,
+    DateTime? ValidTo,
     DateTime? ExpiresAt,
+    Guid CertificateId,
     string CertificateName,
     string OwnerUsername,
     DateTime CreatedAt,
@@ -21,6 +27,11 @@ public record CreateKeyRequest(
     string KeyType,
     string Value,
     Guid CertificateId,
+    string EncryptionAlgorithm = "AES256", // RSA, AES256, ECC
+    string EnvironmentTag = "DEV", // DEV, TEST, UAT, PROD
+    List<string>? Tags = null,
+    DateTime? ValidFrom = null,
+    DateTime? ValidTo = null,
     DateTime? ExpiresAt = null,
     Guid? OwnerUserId = null
 );
@@ -44,7 +55,11 @@ public record KeyQueryParams(
     int PageSize = 20,
     string? Status = null,
     string? KeyType = null,
-    string? Search = null
+    string? EnvironmentTag = null,
+    string? Tag = null,
+    Guid? CertificateId = null,
+    string? Search = null,
+    bool? ExpiringIn30Days = null
 );
 
 public record RetrieveKeyRequest(string? Reason = null);

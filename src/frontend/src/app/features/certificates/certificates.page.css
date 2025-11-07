@@ -1,0 +1,139 @@
+.certificates-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.certificates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.certificates-header h1 {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.subtitle {
+  color: #718096;
+  margin: 0;
+}
+
+.certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: 1.5rem;
+}
+
+.cert-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 1rem;
+}
+
+.cert-icon {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  border-radius: 12px;
+}
+
+.cert-info {
+  flex: 1;
+}
+
+.cert-info h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.cert-desc {
+  color: #718096;
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+}
+
+.cert-details {
+  background: #f7fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.cert-details p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.cert-details code {
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.cert-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn, .btn-sm {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #3182ce;
+  color: white;
+}
+
+.btn-sm {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem;
+}
+
+.spinner {
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #3182ce;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+

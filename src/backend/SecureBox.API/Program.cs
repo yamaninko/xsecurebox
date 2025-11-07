@@ -112,10 +112,11 @@ builder.Services.AddCors(options =>
 
 // Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<IKeyService, KeyService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddSingleton<IMessageBrokerService, RabbitMQService>();
 

@@ -1,0 +1,111 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>📊 Dashboard</h1>
+    <p class="subtitle">Overview of your Secure Box system</p>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading dashboard...</p>
+  </div>
+
+  <div *ngIf="error" class="error-banner">
+    {{ error }}
+  </div>
+
+  <div *ngIf="stats && !loading" class="dashboard-content">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card keys-total">
+        <div class="stat-icon">🔑</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalKeys }}</h3>
+          <p>Total Keys</p>
+        </div>
+      </div>
+
+      <div class="stat-card keys-active">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <h3>{{ stats.activeKeys }}</h3>
+          <p>Active Keys</p>
+        </div>
+      </div>
+
+      <div class="stat-card keys-expired">
+        <div class="stat-icon">⏰</div>
+        <div class="stat-info">
+          <h3>{{ stats.expiredKeys }}</h3>
+          <p>Expired Keys</p>
+        </div>
+      </div>
+
+      <div class="stat-card keys-revoked">
+        <div class="stat-icon">🚫</div>
+        <div class="stat-info">
+          <h3>{{ stats.revokedKeys }}</h3>
+          <p>Revoked Keys</p>
+        </div>
+      </div>
+
+      <div class="stat-card certificates">
+        <div class="stat-icon">📜</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalCertificates }}</h3>
+          <p>Certificates</p>
+        </div>
+      </div>
+
+      <div class="stat-card users">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+          <h3>{{ stats.totalUsers }}</h3>
+          <p>Users</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Environment Chart -->
+    <div class="chart-section">
+      <h2>📈 Keys by Environment</h2>
+      <div class="environment-bars">
+        <div *ngFor="let env of stats.keysByEnvironment" class="env-bar">
+          <div class="env-label">
+            <span class="env-name">{{ env.environment }}</span>
+            <span class="env-count">{{ env.count }} keys</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" 
+                 [style.width.%]="(env.count / stats.totalKeys) * 100"
+                 [class]="'env-' + env.environment.toLowerCase()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="activity-section">
+      <h2>📋 Recent Activity</h2>
+      <div class="activity-list">
+        <div *ngFor="let activity of stats.recentActivity" class="activity-item">
+          <div class="activity-icon">
+            <span *ngIf="activity.action.includes('Key')" class="icon">🔑</span>
+            <span *ngIf="activity.action.includes('User')" class="icon">👤</span>
+            <span *ngIf="activity.action.includes('Certificate')" class="icon">📜</span>
+          </div>
+          <div class="activity-details">
+            <p class="activity-action">
+              <strong>{{ activity.action }}</strong>: {{ activity.resource }}
+            </p>
+            <p class="activity-meta">
+              <span class="username">{{ activity.username }}</span>
+              <span class="timestamp">{{ activity.timestamp | date:'short' }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

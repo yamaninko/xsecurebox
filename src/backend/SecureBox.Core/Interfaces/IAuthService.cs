@@ -17,6 +17,21 @@ public interface IUserService
     Task<UserDto> CreateUserAsync(CreateUserRequest request);
     Task<UserDto> UpdateUserAsync(Guid userId, UpdateUserRequest request);
     Task DeleteUserAsync(Guid userId);
+    Task AssignRoleToUserAsync(Guid userId, Guid roleId, Guid assignedBy);
+    Task RemoveRoleFromUserAsync(Guid userId, Guid roleId);
+}
+
+public interface IRoleService
+{
+    Task<IEnumerable<RoleDto>> GetAllRolesAsync();
+    Task<RoleDto?> GetRoleByIdAsync(Guid roleId);
+    Task<RoleDto> CreateRoleAsync(CreateRoleRequest request, Guid createdBy);
+    Task<RoleDto> UpdateRoleAsync(Guid roleId, UpdateRoleRequest request);
+    Task DeleteRoleAsync(Guid roleId);
+    Task AssignPermissionToRoleAsync(Guid roleId, Guid permissionId, Guid grantedBy);
+    Task RemovePermissionFromRoleAsync(Guid roleId, Guid permissionId);
+    Task<IEnumerable<PermissionDto>> GetPermissionsAsync();
+    Task<IEnumerable<PermissionDto>> GetRolePermissionsAsync(Guid roleId);
 }
 
 public interface ICertificateService

@@ -1,8 +1,17 @@
-# Secure Box - Yüksek Güvenlikli Anahtar Yönetim Sistemi
+# 🔐 Secure Box - Yüksek Güvenlikli Anahtar Yönetim Sistemi
 
-## Genel Bakış
+> **Versiyon:** 1.0.0 MVP  
+> **Son Güncelleme:** 2025-11-07  
+> **Durum:** ✅ MVP Tamamlandı
 
-Secure Box, kritik anahtarların şifrelenmiş olarak saklanmasını ve yüksek güvenlik standartlarıyla API üzerinden erişimini sağlayan bir sistemdir.
+## 📝 Genel Bakış
+
+Secure Box, kritik anahtarların (API keys, passwords, secrets, certificates) şifrelenmiş olarak saklanmasını ve yüksek güvenlik standartlarıyla API ve Portal üzerinden yönetimini sağlayan bir sistemdir.
+
+**Varsayılan Giriş Bilgileri:**
+- **Kullanıcı Adı:** `admin`
+- **Şifre:** `Admin@123`
+- **Portal URL:** http://localhost
 
 ## Teknoloji Stack
 

@@ -6,13 +6,26 @@ public class Key
     public required string Name { get; set; }
     public string? Description { get; set; }
     public required string KeyType { get; set; }
+    
+    // Encryption
     public required byte[] EncryptedValue { get; set; }
     public required byte[] EncryptionIV { get; set; }
     public required byte[] EncryptionTag { get; set; }
+    public required string EncryptionAlgorithm { get; set; } = "AES256"; // RSA, AES256, ECC
+    
+    // Certificate & Environment
     public Guid CertificateId { get; set; }
+    public required string EnvironmentTag { get; set; } = "DEV"; // DEV, TEST, UAT, PROD
+    public string? Tags { get; set; } // JSON array stored as string: ["api-key", "production", "critical"]
+    
+    // Lifecycle
     public int Version { get; set; } = 1;
     public string Status { get; set; } = "Active"; // Active, Expired, Revoked, Archived
+    public DateTime ValidFrom { get; set; } = DateTime.UtcNow;
+    public DateTime? ValidTo { get; set; }
     public DateTime? ExpiresAt { get; set; }
+    
+    // Ownership & Audit
     public Guid OwnerUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public Guid CreatedBy { get; set; }

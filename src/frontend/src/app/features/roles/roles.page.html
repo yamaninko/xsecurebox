@@ -1,0 +1,36 @@
+<div class="roles-container">
+  <div class="roles-header">
+    <div>
+      <h1>🛡️ Role Management</h1>
+      <p class="subtitle">Manage user roles and permissions</p>
+    </div>
+    <button class="btn btn-primary">➕ Create New Role</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading roles...</p>
+  </div>
+
+  <div *ngIf="!loading" class="roles-grid">
+    <div *ngFor="let role of roles" class="role-card">
+      <div class="role-icon">🛡️</div>
+      <div class="role-info">
+        <h3>{{ role.roleName }}</h3>
+        <p class="role-desc">{{ role.description }}</p>
+        <div class="role-stats">
+          <span>👥 {{ role.userCount }} users</span>
+          <span>🔐 {{ role.permissionCount }} permissions</span>
+        </div>
+        <span class="badge" [class.system-badge]="role.isSystem">
+          {{ role.isSystem ? 'System Role' : 'Custom Role' }}
+        </span>
+      </div>
+      <div class="role-actions">
+        <button class="btn-sm" [disabled]="role.isSystem">Edit</button>
+        <button class="btn-sm btn-danger" (click)="deleteRole(role)" [disabled]="role.isSystem">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+

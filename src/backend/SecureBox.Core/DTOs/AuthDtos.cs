@@ -60,3 +60,32 @@ public record UserQueryParams(
     bool? IsActive = null
 );
 
+public record RoleDto(
+    Guid RoleId,
+    string RoleName,
+    string? Description,
+    bool IsSystem,
+    int UserCount,
+    int PermissionCount,
+    DateTime CreatedAt
+);
+
+public record CreateRoleRequest(
+    string RoleName,
+    string? Description,
+    List<Guid>? PermissionIds = null
+);
+
+public record UpdateRoleRequest(
+    string? RoleName,
+    string? Description
+);
+
+public record PermissionDto(
+    Guid PermissionId,
+    string PermissionName,
+    string Resource,
+    string Action,
+    string? Description
+);
+
