@@ -29,8 +29,6 @@ build_api:
   image: docker:24-dind
   services:
     - docker:24-dind
-  tags:
-    - docker
   variables:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_VERIFY: 1
@@ -63,8 +61,6 @@ build_portal:
   image: docker:24-dind
   services:
     - docker:24-dind
-  tags:
-    - docker
   variables:
     DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_VERIFY: 1
@@ -99,8 +95,6 @@ build_portal:
 test_api:
   stage: test
   image: mcr.microsoft.com/dotnet/sdk:9.0
-  tags:
-    - docker
   script:
     - echo "Running API Tests"
     - cd src/backend
@@ -125,8 +119,6 @@ test_api:
 test_portal:
   stage: test
   image: node:20-alpine
-  tags:
-    - docker
   script:
     - echo "Running Portal Tests"
     - cd src/frontend
@@ -157,8 +149,6 @@ push_api:
   image: docker:24-dind
   services:
     - docker:24-dind
-  tags:
-    - docker
   dependencies:
     - build_api
   variables:
@@ -188,8 +178,6 @@ push_portal:
   image: docker:24-dind
   services:
     - docker:24-dind
-  tags:
-    - docker
   dependencies:
     - build_portal
   variables:
@@ -221,8 +209,6 @@ push_portal:
 deploy_dev:
   stage: deploy
   image: bitnami/kubectl:latest
-  tags:
-    - docker
   environment:
     name: development
     url: http://dev.securebox.local
@@ -274,8 +260,6 @@ deploy_dev:
 deploy_production:
   stage: deploy
   image: bitnami/kubectl:latest
-  tags:
-    - docker
   environment:
     name: production
     url: https://securebox.example.com
@@ -330,8 +314,6 @@ deploy_production:
 cleanup_dev:
   stage: cleanup
   image: bitnami/kubectl:latest
-  tags:
-    - docker
   environment:
     name: development
     action: stop
@@ -349,8 +331,6 @@ cleanup_dev:
 cleanup_production:
   stage: cleanup
   image: bitnami/kubectl:latest
-  tags:
-    - docker
   environment:
     name: production
     action: stop
@@ -366,8 +346,6 @@ cleanup_docker:
   image: docker:24-dind
   services:
     - docker:24-dind
-  tags:
-    - docker
   script:
     - echo "Cleaning up Docker resources"
     - docker system prune -af --volumes
