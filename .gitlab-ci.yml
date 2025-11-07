@@ -36,7 +36,7 @@ build_api:
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   script:
-    - echo "Building Building API Docker Image"
+    - echo "Building API Docker Image"
     - docker info
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/backend/SecureBox.API
@@ -69,7 +69,7 @@ build_portal:
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   script:
-    - echo "Building Building Portal Docker Image"
+    - echo "Building Portal Docker Image"
     - docker info
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/frontend
@@ -100,7 +100,7 @@ test_api:
   tags:
     - docker
   script:
-    - echo "Testing Running API Tests"
+    - echo "Running API Tests"
     - cd src/backend
     - dotnet restore
     - dotnet build --no-restore
@@ -125,7 +125,7 @@ test_portal:
   tags:
     - docker
   script:
-    - echo "Testing Running Portal Tests"
+    - echo "Running Portal Tests"
     - cd src/frontend
     - npm ci
     - npm run test -- --watch=false --browsers=ChromeHeadless
@@ -192,14 +192,14 @@ push_portal:
     DOCKER_TLS_VERIFY: 1
     DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   script:
-    - echo "Pushing Pushing Portal Image to Harbor"
+    - echo "Pushing Portal Image to Harbor"
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - docker load < portal-image.tar.gz
     - docker push $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG
-    - if [ "$CI_COMMIT_REF_NAME" == "main" ]; then docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest; docker push $PORTAL_IMAGE:latest; echo " Pushed as latest tag"; fi
-    - echo " Portal Image pushed successfully!"
-    - echo "Image: $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - if [ "$CI_COMMIT_REF_NAME" == "main" ]; then docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest; docker push $PORTAL_IMAGE:latest; echo "Pushed as latest tag"; fi
+    - echo "Portal Image pushed successfully"
+    - echo "Image - $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
     - main
     - develop
@@ -222,7 +222,7 @@ deploy_dev:
     url: http://dev.securebox.local
     on_stop: cleanup_dev
   script:
-    - echo "Deploying Deploying to Development Environment"
+    - echo "Deploying to Development Environment"
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG_DEV" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
@@ -255,7 +255,7 @@ deploy_dev:
     - kubectl get deployments -n $KUBE_NAMESPACE
     - kubectl get pods -n $KUBE_NAMESPACE
     - kubectl get services -n $KUBE_NAMESPACE
-    - echo " Deployment to DEV completed successfully!"
+    - echo "Deployment to DEV completed successfully!"
   only:
     - develop
   when: manual
@@ -274,7 +274,7 @@ deploy_production:
     url: https://securebox.example.com
     on_stop: cleanup_production
   script:
-    - echo "Deploying Deploying to Production Environment"
+    - echo "Deploying to Production Environment"
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG_PROD" | base64 -d > ~/.kube/config
     - chmod 600 ~/.kube/config
@@ -307,7 +307,7 @@ deploy_production:
     - kubectl get deployments -n $KUBE_NAMESPACE
     - kubectl get pods -n $KUBE_NAMESPACE
     - kubectl get services -n $KUBE_NAMESPACE
-    - echo " Production Deployment completed successfully!"
+    - echo "Production Deployment completed successfully!"
   only:
     - main
   when: manual
@@ -329,11 +329,11 @@ cleanup_dev:
     name: development
     action: stop
   script:
-    - echo "Cleaning Cleaning up Development Environment"
+    - echo "Cleaning up Development Environment"
     - mkdir -p ~/.kube
     - echo "$KUBECONFIG_DEV" | base64 -d > ~/.kube/config
     - kubectl delete namespace $KUBE_NAMESPACE --ignore-not-found=true
-    - echo " Development environment cleaned up"
+    - echo "Development environment cleaned up"
   when: manual
   only:
     - develop
@@ -361,10 +361,10 @@ cleanup_docker:
   tags:
     - docker
   script:
-    - echo "Cleaning Cleaning up Docker resources"
+    - echo "Cleaning up Docker resources"
     - docker system prune -af --volumes
     - docker builder prune -af
-    - echo " Docker cleanup completed"
+    - echo "Docker cleanup completed"
   when: always
   allow_failure: true
   only:
