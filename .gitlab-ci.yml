@@ -160,12 +160,8 @@ push_api:
     - docker load < api-image.tar.gz
     - docker push $API_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $API_IMAGE:$CI_COMMIT_REF_SLUG
-    - |
-      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
-        docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest
-        docker push $API_IMAGE:latest
-        echo "Pushed as latest tag"
-      fi
+    - docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest
+    - docker push $API_IMAGE:latest
     - echo "API Image pushed successfully"
     - echo "Image - $API_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
@@ -194,12 +190,8 @@ push_portal:
     - docker load < portal-image.tar.gz
     - docker push $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG
-    - |
-      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
-        docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest
-        docker push $PORTAL_IMAGE:latest
-        echo "Pushed as latest tag"
-      fi
+    - docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest
+    - docker push $PORTAL_IMAGE:latest
     - echo "Portal Image pushed successfully"
     - echo "Image - $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
@@ -327,10 +319,9 @@ deploy_dev:
     - kubectl get services -n $KUBE_NAMESPACE
     - echo ""
     - echo "🔌 EXTERNAL ACCESS:"
-    - |
-      NODE_PORT=$(kubectl get service nginx-service -n $KUBE_NAMESPACE -o jsonpath='{.spec.ports[0].nodePort}')
-      echo "  NodePort: $NODE_PORT"
-      echo "  Access URL: http://<node-ip>:$NODE_PORT"
+    - NODE_PORT=$(kubectl get service nginx-service -n $KUBE_NAMESPACE -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30222")
+    - echo "  NodePort:" $NODE_PORT
+    - echo "  Access URL:" "http://<node-ip>:$NODE_PORT"
     - echo ""
     - echo "=========================================="
     - echo "✅ DEPLOYMENT COMPLETED SUCCESSFULLY!"
