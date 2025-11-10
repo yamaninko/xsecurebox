@@ -26,11 +26,19 @@ build_api:
   stage: build
   script:
     - echo "Building API Docker Image"
-    - docker info
+    - echo "Checking Docker availability..."
+    - docker --version || (echo "Docker not available" && exit 1)
+    - docker info || (echo "Docker daemon not accessible" && exit 1)
+    - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/backend/SecureBox.API
+    - echo "Building Docker image..."
     - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$CI_COMMIT_REF_NAME --cache-from $API_IMAGE:latest --tag $API_IMAGE:$CI_COMMIT_SHORT_SHA --tag $API_IMAGE:$CI_COMMIT_REF_SLUG --file Dockerfile ..
+    - cd ../../..
+    - echo "Saving Docker image to artifact..."
     - docker save $API_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > api-image.tar.gz
+    - ls -lh api-image.tar.gz
+    - echo "API image artifact created successfully"
   artifacts:
     name: "api-image-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -49,11 +57,19 @@ build_portal:
   stage: build
   script:
     - echo "Building Portal Docker Image"
-    - docker info
+    - echo "Checking Docker availability..."
+    - docker --version || (echo "Docker not available" && exit 1)
+    - docker info || (echo "Docker daemon not accessible" && exit 1)
+    - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/frontend
+    - echo "Building Docker image..."
     - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$CI_COMMIT_REF_NAME --cache-from $PORTAL_IMAGE:latest --tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA --tag $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG --file Dockerfile .
+    - cd ../..
+    - echo "Saving Docker image to artifact..."
     - docker save $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > portal-image.tar.gz
+    - ls -lh portal-image.tar.gz
+    - echo "Portal image artifact created successfully"
   artifacts:
     name: "portal-image-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -126,9 +142,16 @@ push_api:
   stage: push
   dependencies:
     - build_api
+  needs:
+    - job: build_api
+      artifacts: true
   script:
     - echo "Pushing API Image to Harbor"
+    - echo "Checking for artifact..."
+    - ls -lh api-image.tar.gz || (echo "ERROR: api-image.tar.gz not found!" && exit 1)
+    - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
+    - echo "Loading Docker image from artifact..."
     - docker load < api-image.tar.gz
     - docker push $API_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $API_IMAGE:$CI_COMMIT_REF_SLUG
@@ -147,9 +170,16 @@ push_portal:
   stage: push
   dependencies:
     - build_portal
+  needs:
+    - job: build_portal
+      artifacts: true
   script:
     - echo "Pushing Portal Image to Harbor"
+    - echo "Checking for artifact..."
+    - ls -lh portal-image.tar.gz || (echo "ERROR: portal-image.tar.gz not found!" && exit 1)
+    - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
+    - echo "Loading Docker image from artifact..."
     - docker load < portal-image.tar.gz
     - docker push $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG
