@@ -26,6 +26,8 @@ data:
   # API Configuration
   ASPNETCORE_ENVIRONMENT: Production
   ASPNETCORE_URLS: http://+:5000
+  ENABLE_SWAGGER: "true"
+  DISABLE_HTTPS_REDIRECT: "true"
   
   # JWT Configuration
   JWT_ISSUER: SecureBoxAPI

@@ -176,13 +176,13 @@ spec:
             secretKeyRef:
               name: securebox-secrets
               key: RABBITMQ_DEFAULT_PASS
-        # Connection Strings (from secrets)
-        - name: ConnectionStrings__DefaultConnection
+        # Connection Strings - API'nin appsettings.json'daki key isimleriyle eşleşmeli
+        - name: ConnectionStrings__PostgreSQL
           valueFrom:
             secretKeyRef:
               name: securebox-secrets
               key: CONNECTION_STRING_POSTGRES
-        - name: ConnectionStrings__MongoDb
+        - name: ConnectionStrings__MongoDB
           valueFrom:
             secretKeyRef:
               name: securebox-secrets
