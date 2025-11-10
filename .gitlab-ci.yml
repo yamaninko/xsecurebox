@@ -8,8 +8,6 @@ stages:
   - cleanup
 
 variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERTDIR: "/certs"
   DOCKER_BUILDKIT: "1"
   API_IMAGE: "${GTECH_REPO_URL}/securebox/api"
   PORTAL_IMAGE: "${GTECH_REPO_URL}/securebox/portal"
@@ -26,13 +24,8 @@ cache:
 
 build_api:
   stage: build
-  image: docker:24-dind
-  services:
-    - docker:24-dind
-  variables:
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_VERIFY: 1
-    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  tags:
+    - shell
   script:
     - echo "Building API Docker Image"
     - docker info
@@ -58,13 +51,8 @@ build_api:
 
 build_portal:
   stage: build
-  image: docker:24-dind
-  services:
-    - docker:24-dind
-  variables:
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_VERIFY: 1
-    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  tags:
+    - shell
   script:
     - echo "Building Portal Docker Image"
     - docker info
@@ -146,15 +134,10 @@ test_portal:
 
 push_api:
   stage: push
-  image: docker:24-dind
-  services:
-    - docker:24-dind
+  tags:
+    - shell
   dependencies:
     - build_api
-  variables:
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_VERIFY: 1
-    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   script:
     - echo "Pushing API Image to Harbor"
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
@@ -175,15 +158,10 @@ push_api:
 
 push_portal:
   stage: push
-  image: docker:24-dind
-  services:
-    - docker:24-dind
+  tags:
+    - shell
   dependencies:
     - build_portal
-  variables:
-    DOCKER_HOST: tcp://docker:2376
-    DOCKER_TLS_VERIFY: 1
-    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
   script:
     - echo "Pushing Portal Image to Harbor"
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
@@ -343,9 +321,8 @@ cleanup_production:
 
 cleanup_docker:
   stage: cleanup
-  image: docker:24-dind
-  services:
-    - docker:24-dind
+  tags:
+    - shell
   script:
     - echo "Cleaning up Docker resources"
     - docker system prune -af --volumes
