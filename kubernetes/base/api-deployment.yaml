@@ -81,12 +81,102 @@ spec:
             configMapKeyRef:
               name: securebox-config
               key: CORS_ALLOWED_ORIGINS
+        # PostgreSQL Connection Details (individual env vars)
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: POSTGRES_PORT
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: securebox-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: securebox-secrets
+              key: POSTGRES_PASSWORD
         # Secret values
         - name: JWT__SecretKey
           valueFrom:
             secretKeyRef:
               name: securebox-secrets
               key: JWT_SECRET_KEY
+        # MongoDB Connection Details
+        - name: MONGODB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: MONGODB_HOST
+        - name: MONGODB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: MONGODB_PORT
+        - name: MONGODB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: MONGODB_DATABASE
+        - name: MONGODB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: securebox-secrets
+              key: MONGODB_USERNAME
+        - name: MONGODB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: securebox-secrets
+              key: MONGODB_PASSWORD
+        # Redis Connection Details
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: REDIS_PORT
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: securebox-secrets
+              key: REDIS_PASSWORD
+        # RabbitMQ Connection Details
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: securebox-config
+              key: RABBITMQ_PORT
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: securebox-secrets
+              key: RABBITMQ_DEFAULT_USER
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: securebox-secrets
+              key: RABBITMQ_DEFAULT_PASS
+        # Connection Strings (from secrets)
         - name: ConnectionStrings__DefaultConnection
           valueFrom:
             secretKeyRef:

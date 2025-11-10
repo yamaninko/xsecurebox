@@ -59,6 +59,8 @@ spec:
             - pg_isready
             - -U
             - secureboxuser
+            - -d
+            - secureboxdb
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -68,6 +70,8 @@ spec:
             - pg_isready
             - -U
             - secureboxuser
+            - -d
+            - secureboxdb
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
