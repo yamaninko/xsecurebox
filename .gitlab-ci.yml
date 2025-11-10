@@ -24,6 +24,16 @@ cache:
 
 build_api:
   stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    DOCKER_TLS_CERTDIR: "/certs"
   script:
     - echo "Building API Docker Image"
     - docker info
@@ -47,6 +57,16 @@ build_api:
 
 build_portal:
   stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    DOCKER_TLS_CERTDIR: "/certs"
   script:
     - echo "Building Portal Docker Image"
     - docker info
@@ -75,6 +95,8 @@ build_portal:
 test_api:
   stage: test
   image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
   script:
     - echo "Running API Tests"
     - cd src/backend
@@ -97,6 +119,8 @@ test_api:
 test_portal:
   stage: test
   image: node:20-alpine
+  tags:
+    - docker
   script:
     - echo "Running Portal Tests"
     - cd src/frontend
@@ -122,6 +146,16 @@ test_portal:
 
 push_api:
   stage: push
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    DOCKER_TLS_CERTDIR: "/certs"
   dependencies:
     - build_api
   script:
@@ -143,6 +177,16 @@ push_api:
 
 push_portal:
   stage: push
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+    DOCKER_TLS_CERTDIR: "/certs"
   dependencies:
     - build_portal
   script:
