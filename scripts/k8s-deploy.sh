@@ -48,30 +48,90 @@ curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/s
 # Step 6 - Deploy Infrastructure
 echo "Step 6/10 - Deploying infrastructure services..."
 for service in postgres mongodb redis rabbitmq; do
-  echo "  Deploying $service..."
-  curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-    -H "Content-Type:application/yaml" --data-binary @kubernetes/base/${service}-deployment.yaml || echo "$service exists"
+  echo "  Deploying $service deployment and service..."
+  # Split YAML file by --- delimiter and POST each resource
+  csplit -s -f /tmp/${service}- kubernetes/base/${service}-deployment.yaml '/^---$/' '{*}' 2>/dev/null || cp kubernetes/base/${service}-deployment.yaml /tmp/${service}-00
+  
+  for yaml_part in /tmp/${service}-*; do
+    if [ -s "$yaml_part" ]; then
+      # Detect resource type
+      if grep -q "kind: Deployment" "$yaml_part"; then
+        curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+          -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "$service deployment exists"
+      elif grep -q "kind: Service" "$yaml_part"; then
+        curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
+          -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "$service service exists"
+      fi
+    fi
+  done
+  rm -f /tmp/${service}-*
 done
 sleep 30
 
 # Step 7 - Deploy API
 echo "Step 7/10 - Deploying SecureBox API..."
-curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/api-deployment.yaml || echo "API exists"
+csplit -s -f /tmp/api- kubernetes/base/api-deployment.yaml '/^---$/' '{*}' 2>/dev/null || cp kubernetes/base/api-deployment.yaml /tmp/api-00
+
+for yaml_part in /tmp/api-*; do
+  if [ -s "$yaml_part" ]; then
+    if grep -q "kind: Deployment" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "API deployment exists"
+    elif grep -q "kind: Service" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "API service exists"
+    elif grep -q "kind: HorizontalPodAutoscaler" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/autoscaling/v2/namespaces/$KUBE_NAMESPACE/horizontalpodautoscalers" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "API HPA exists"
+    fi
+  fi
+done
+rm -f /tmp/api-*
 sleep 20
 
 # Step 8 - Deploy Portal
 echo "Step 8/10 - Deploying SecureBox Portal..."
-curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/portal-deployment.yaml || echo "Portal exists"
+csplit -s -f /tmp/portal- kubernetes/base/portal-deployment.yaml '/^---$/' '{*}' 2>/dev/null || cp kubernetes/base/portal-deployment.yaml /tmp/portal-00
+
+for yaml_part in /tmp/portal-*; do
+  if [ -s "$yaml_part" ]; then
+    if grep -q "kind: Deployment" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "Portal deployment exists"
+    elif grep -q "kind: Service" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "Portal service exists"
+    elif grep -q "kind: HorizontalPodAutoscaler" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/autoscaling/v2/namespaces/$KUBE_NAMESPACE/horizontalpodautoscalers" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "Portal HPA exists"
+    fi
+  fi
+done
+rm -f /tmp/portal-*
 sleep 20
 
 # Step 9 - Deploy NGINX
 echo "Step 9/10 - Deploying NGINX Gateway..."
 curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/configmaps" \
-  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/nginx-configmap.yaml || echo "NGINX ConfigMap exists"
-curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/nginx-deployment.yaml || echo "NGINX exists"
+  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/nginx-configmap.yaml 2>/dev/null || echo "NGINX ConfigMap exists"
+
+csplit -s -f /tmp/nginx- kubernetes/base/nginx-deployment.yaml '/^---$/' '{*}' 2>/dev/null || cp kubernetes/base/nginx-deployment.yaml /tmp/nginx-00
+
+for yaml_part in /tmp/nginx-*; do
+  if [ -s "$yaml_part" ]; then
+    if grep -q "kind: Deployment" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "NGINX deployment exists"
+    elif grep -q "kind: Service" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "NGINX service exists"
+    elif grep -q "kind: Ingress" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/networking.k8s.io/v1/namespaces/$KUBE_NAMESPACE/ingresses" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "NGINX ingress exists"
+    fi
+  fi
+done
+rm -f /tmp/nginx-*
 sleep 20
 
 # Step 10 - Status Check
