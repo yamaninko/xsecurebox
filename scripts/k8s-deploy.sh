@@ -7,8 +7,14 @@ echo "=========================================="
 
 # Step 1 - Authentication
 echo "Step 1/10 - Configuring authentication..."
-KUBE_TOKEN=$(echo -n "$KUBE_USER:$KUBE_PASS" | base64 -w 0)
-export AUTH_HEADER="Authorization: Basic $KUBE_TOKEN"
+if [ -n "$KUBE_TOKEN" ]; then
+  echo "Using Bearer Token authentication"
+  export AUTH_HEADER="Authorization: Bearer $KUBE_TOKEN"
+else
+  echo "Using Basic Auth (fallback)"
+  BASIC_TOKEN=$(echo -n "$KUBE_USER:$KUBE_PASS" | base64 -w 0)
+  export AUTH_HEADER="Authorization: Basic $BASIC_TOKEN"
+fi
 curl -k -H "$AUTH_HEADER" "$KUBE_API/version"
 
 # Step 2 - Create Namespace
