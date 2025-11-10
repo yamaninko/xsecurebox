@@ -37,10 +37,8 @@ build_api:
       - api-image.tar.gz
     expire_in: 1 hour
   only:
-    - main
-    - develop
     - development
-    - merge_requests
+    - schedules
   retry:
     max: 2
     when:
@@ -62,10 +60,8 @@ build_portal:
       - portal-image.tar.gz
     expire_in: 1 hour
   only:
-    - main
-    - develop
     - development
-    - merge_requests
+    - schedules
   retry:
     max: 2
     when:
@@ -95,10 +91,8 @@ test_api:
         path: src/backend/**/TestResults/coverage.cobertura.xml
     expire_in: 7 days
   only:
-    - main
-    - develop
     - development
-    - merge_requests
+    - schedules
 
 test_portal:
   stage: test
@@ -119,10 +113,8 @@ test_portal:
     paths:
       - src/frontend/node_modules/
   only:
-    - main
-    - develop
     - development
-    - merge_requests
+    - schedules
 
 # ============================================================================
 # PUSH STAGE
@@ -142,9 +134,8 @@ push_api:
     - echo "API Image pushed successfully"
     - echo "Image - $API_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
-    - main
-    - develop
     - development
+    - schedules
   retry:
     max: 2
     when:
@@ -164,9 +155,8 @@ push_portal:
     - echo "Portal Image pushed successfully"
     - echo "Image - $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
-    - main
-    - develop
     - development
+    - schedules
   retry:
     max: 2
     when:
@@ -219,8 +209,8 @@ deploy_dev:
     - kubectl get services -n $KUBE_NAMESPACE
     - echo "Deployment to DEV completed successfully!"
   only:
-    - develop
     - development
+    - schedules
   when: manual
   retry:
     max: 1
@@ -295,7 +285,6 @@ cleanup_dev:
     - echo "Development environment cleaned up"
   when: manual
   only:
-    - develop
     - development
 
 cleanup_production:
@@ -321,6 +310,5 @@ cleanup_docker:
   when: always
   allow_failure: true
   only:
-    - main
-    - develop
     - development
+    - schedules
