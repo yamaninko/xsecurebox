@@ -24,8 +24,6 @@ cache:
 
 build_api:
   stage: build
-  tags:
-    - shell
   script:
     - echo "Building API Docker Image"
     - docker info
@@ -51,8 +49,6 @@ build_api:
 
 build_portal:
   stage: build
-  tags:
-    - shell
   script:
     - echo "Building Portal Docker Image"
     - docker info
@@ -134,8 +130,6 @@ test_portal:
 
 push_api:
   stage: push
-  tags:
-    - shell
   dependencies:
     - build_api
   script:
@@ -158,8 +152,6 @@ push_api:
 
 push_portal:
   stage: push
-  tags:
-    - shell
   dependencies:
     - build_portal
   script:
@@ -321,8 +313,6 @@ cleanup_production:
 
 cleanup_docker:
   stage: cleanup
-  tags:
-    - shell
   script:
     - echo "Cleaning up Docker resources"
     - docker system prune -af --volumes
