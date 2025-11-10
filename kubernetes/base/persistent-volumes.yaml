@@ -2,9 +2,10 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: postgres-pv
+  name: securebox-postgres-pv
   labels:
     app: postgres
+    project: securebox
 spec:
   capacity:
     storage: 10Gi
@@ -31,13 +32,15 @@ spec:
   selector:
     matchLabels:
       app: postgres
+      project: securebox
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: mongodb-pv
+  name: securebox-mongodb-pv
   labels:
     app: mongodb
+    project: securebox
 spec:
   capacity:
     storage: 10Gi
@@ -64,13 +67,15 @@ spec:
   selector:
     matchLabels:
       app: mongodb
+      project: securebox
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: redis-pv
+  name: securebox-redis-pv
   labels:
     app: redis
+    project: securebox
 spec:
   capacity:
     storage: 5Gi
@@ -97,13 +102,15 @@ spec:
   selector:
     matchLabels:
       app: redis
+      project: securebox
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: rabbitmq-pv
+  name: securebox-rabbitmq-pv
   labels:
     app: rabbitmq
+    project: securebox
 spec:
   capacity:
     storage: 5Gi
@@ -130,4 +137,5 @@ spec:
   selector:
     matchLabels:
       app: rabbitmq
+      project: securebox
 

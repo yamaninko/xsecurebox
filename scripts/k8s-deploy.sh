@@ -44,7 +44,23 @@ curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/c
 curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/secrets" \
   -H "Content-Type:application/yaml" --data-binary @kubernetes/base/secrets.yaml || echo "Secret exists"
 
-echo "  Creating Persistent Volumes and Claims..."
+echo "  Cleaning up old PVCs and corrupt data..."
+# Delete old PVCs first (this will also trigger PV release)
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/persistentvolumeclaims/postgres-pvc" 2>/dev/null || true
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/persistentvolumeclaims/mongodb-pvc" 2>/dev/null || true
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/persistentvolumeclaims/redis-pvc" 2>/dev/null || true
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/persistentvolumeclaims/rabbitmq-pvc" 2>/dev/null || true
+sleep 5
+
+echo "  Deleting old conflicting PVs if any..."
+# Try to delete old PVs with conflicting names
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/persistentvolumes/postgres-pv" 2>/dev/null || true
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/persistentvolumes/mongodb-pv" 2>/dev/null || true
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/persistentvolumes/redis-pv" 2>/dev/null || true
+curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/api/v1/persistentvolumes/rabbitmq-pv" 2>/dev/null || true
+sleep 5
+
+echo "  Creating new Persistent Volumes with unique names..."
 csplit -s -f /tmp/pv- kubernetes/base/persistent-volumes.yaml '/^---$/' '{*}' 2>/dev/null || cp kubernetes/base/persistent-volumes.yaml /tmp/pv-00
 
 for yaml_part in /tmp/pv-*; do
@@ -62,6 +78,12 @@ rm -f /tmp/pv-*
 
 # Step 6 - Deploy Infrastructure
 echo "Step 6/10 - Deploying infrastructure services..."
+echo "  Deleting old database deployments to start fresh..."
+for service in postgres mongodb redis rabbitmq; do
+  curl -k -H "$AUTH_HEADER" -X DELETE "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/$service" 2>/dev/null || true
+done
+sleep 10
+
 for service in postgres mongodb redis rabbitmq; do
   echo "  Deploying $service deployment and service..."
   # Split YAML file by --- delimiter and POST each resource
@@ -72,7 +94,7 @@ for service in postgres mongodb redis rabbitmq; do
       # Detect resource type
       if grep -q "kind: Deployment" "$yaml_part"; then
         curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-          -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "$service deployment exists"
+          -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "$service deployment created"
       elif grep -q "kind: Service" "$yaml_part"; then
         curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
           -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "$service service exists"
