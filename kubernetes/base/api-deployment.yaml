@@ -225,7 +225,7 @@ spec:
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health/ready
+            path: /health
             port: 5000
             scheme: HTTP
           initialDelaySeconds: 10
