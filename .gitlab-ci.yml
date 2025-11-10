@@ -220,19 +220,31 @@ deploy_dev:
     - echo "AUTONOMOUS KUBERNETES DEPLOYMENT via API"
     - echo "=========================================="
     - export KUBE_API="$KUBE_URL"
-    - export KUBE_AUTH="$KUBE_USER:$KUBE_PASS"
-    - echo "Step 1/10 - Testing Kubernetes API connection..."
-    - curl -k -u "$KUBE_AUTH" "$KUBE_API/version" || echo "Warning - API connection issue"
+    - echo "Step 1/10 - Getting Kubernetes Token..."
+    - |
+      KUBE_TOKEN=$(curl -sk -u "$KUBE_USER:$KUBE_PASS" -X POST "$KUBE_API/api/v1/namespaces/kube-system/serviceaccounts/admin/token" \
+        -H "Content-Type: application/json" \
+        -d '{"kind":"TokenRequest","apiVersion":"authentication.k8s.io/v1","spec":{"expirationSeconds":3600}}' | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+    - |
+      if [ -z "$KUBE_TOKEN" ]; then
+        echo "Token generation failed, using basic auth token..."
+        KUBE_TOKEN=$(echo -n "$KUBE_USER:$KUBE_PASS" | base64 -w 0)
+        export AUTH_HEADER="Authorization: Basic $KUBE_TOKEN"
+      else
+        export AUTH_HEADER="Authorization: Bearer $KUBE_TOKEN"
+      fi
+    - echo "Testing Kubernetes API connection..."
+    - curl -k -H "$AUTH_HEADER" "$KUBE_API/version" || echo "Warning - API connection issue"
     - echo "Step 2/10 - Creating namespace securebox..."
     - |
-      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces" \
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces" \
         -H "Content-Type: application/json" \
         -d '{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"'$KUBE_NAMESPACE'"}}' || echo "Namespace may exist"
     - echo "Step 3/10 - Creating Harbor registry secret..."
     - |
       DOCKER_AUTH=$(echo -n "$GTECH_REPO_USERNAME:$GTECH_REPO_TOKEN" | base64 -w 0)
       DOCKER_CONFIG=$(echo -n '{"auths":{"'$GTECH_REPO_URL'":{"username":"'$GTECH_REPO_USERNAME'","password":"'$GTECH_REPO_TOKEN'","auth":"'$DOCKER_AUTH'"}}}' | base64 -w 0)
-      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/secrets" \
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/secrets" \
         -H "Content-Type: application/json" \
         -d '{"apiVersion":"v1","kind":"Secret","type":"kubernetes.io/dockerconfigjson","metadata":{"name":"harbor-registry-secret"},"data":{".dockerconfigjson":"'$DOCKER_CONFIG'"}}' || echo "Secret may exist"
     - echo "Step 4/10 - Updating image tags..."
@@ -243,7 +255,7 @@ deploy_dev:
     - echo "Step 5/10 - Deploying ConfigMaps and Secrets..."
     - |
       for file in kubernetes/base/configmap.yaml kubernetes/base/secrets.yaml; do
-        curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/$(grep -q 'kind: ConfigMap' $file && echo 'configmaps' || echo 'secrets')" \
+        curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/$(grep -q 'kind: ConfigMap' $file && echo 'configmaps' || echo 'secrets')" \
           -H "Content-Type: application/yaml" \
           --data-binary @"$file" || echo "Resource may exist"
       done
@@ -251,48 +263,48 @@ deploy_dev:
     - |
       for service in postgres mongodb redis rabbitmq; do
         echo "  Deploying $service..."
-        curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+        curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
           -H "Content-Type: application/yaml" \
           --data-binary @"kubernetes/base/${service}-deployment.yaml" || \
-        curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/${service}" \
+        curl -k -H "$AUTH_HEADER" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/${service}" \
           -H "Content-Type: application/strategic-merge-patch+json" \
           --data-binary @"kubernetes/base/${service}-deployment.yaml"
       done
     - sleep 30
     - echo "Step 7/10 - Deploying SecureBox API..."
     - |
-      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
         -H "Content-Type: application/yaml" \
         --data-binary @"kubernetes/base/api-deployment.yaml" || \
-      curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-api" \
+      curl -k -H "$AUTH_HEADER" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-api" \
         -H "Content-Type: application/strategic-merge-patch+json" \
         --data-binary @"kubernetes/base/api-deployment.yaml"
     - sleep 20
     - echo "Step 8/10 - Deploying SecureBox Portal..."
     - |
-      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
         -H "Content-Type: application/yaml" \
         --data-binary @"kubernetes/base/portal-deployment.yaml" || \
-      curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-portal" \
+      curl -k -H "$AUTH_HEADER" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-portal" \
         -H "Content-Type: application/strategic-merge-patch+json" \
         --data-binary @"kubernetes/base/portal-deployment.yaml"
     - sleep 20
     - echo "Step 9/10 - Deploying NGINX Gateway..."
     - |
-      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/configmaps" \
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/configmaps" \
         -H "Content-Type: application/yaml" \
         --data-binary @"kubernetes/base/nginx-configmap.yaml" || echo "ConfigMap exists"
-      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
         -H "Content-Type: application/yaml" \
         --data-binary @"kubernetes/base/nginx-deployment.yaml" || \
-      curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/nginx" \
+      curl -k -H "$AUTH_HEADER" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/nginx" \
         -H "Content-Type: application/strategic-merge-patch+json" \
         --data-binary @"kubernetes/base/nginx-deployment.yaml"
     - sleep 20
     - echo "Step 10/10 - Checking deployment status..."
-    - curl -k -u "$KUBE_AUTH" "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" | grep -o '"name":"[^"]*"' | head -10
-    - curl -k -u "$KUBE_AUTH" "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/pods" | grep -o '"name":"[^"]*"' | head -10
-    - curl -k -u "$KUBE_AUTH" "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" | grep -o '"name":"[^"]*"' | head -10
+    - curl -k -H "$AUTH_HEADER" "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" | grep -o '"name":"[^"]*"' | head -10
+    - curl -k -H "$AUTH_HEADER" "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/pods" | grep -o '"name":"[^"]*"' | head -10
+    - curl -k -H "$AUTH_HEADER" "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" | grep -o '"name":"[^"]*"' | head -10
     - echo "Access URL - http://<node-ip>:30222"
     - echo "=========================================="
     - echo "DEPLOYMENT COMPLETED"
@@ -369,8 +381,8 @@ cleanup_dev:
   script:
     - echo "Cleaning up Development Environment via Kubernetes API"
     - export KUBE_API="$KUBE_URL"
-    - export KUBE_AUTH="$KUBE_USER:$KUBE_PASS"
-    - curl -k -u "$KUBE_AUTH" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE"
+    - KUBE_TOKEN=$(echo -n "$KUBE_USER:$KUBE_PASS" | base64 -w 0)
+    - curl -k -H "Authorization: Basic $KUBE_TOKEN" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE"
     - echo "Development environment cleaned up"
   when: manual
   only:
