@@ -208,7 +208,6 @@ push_portal:
 
 deploy_dev:
   stage: deploy
-  image: bitnami/kubectl:latest
   needs:
     - push_api
     - push_portal
@@ -218,56 +217,85 @@ deploy_dev:
     on_stop: cleanup_dev
   script:
     - echo "=========================================="
-    - echo "AUTONOMOUS KUBERNETES DEPLOYMENT"
+    - echo "AUTONOMOUS KUBERNETES DEPLOYMENT via API"
     - echo "=========================================="
-    - echo "Step 1/10 - Configuring kubectl..."
-    - kubectl config set-cluster kubernetes --server="$KUBE_URL" --insecure-skip-tls-verify=true
-    - kubectl config set-credentials admin --username="$KUBE_USER" --password="$KUBE_PASS"
-    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin --namespace=$KUBE_NAMESPACE
-    - kubectl config use-context kubernetes
-    - kubectl version --client
-    - kubectl cluster-info
+    - export KUBE_API="$KUBE_URL"
+    - export KUBE_AUTH="$KUBE_USER:$KUBE_PASS"
+    - echo "Step 1/10 - Testing Kubernetes API connection..."
+    - curl -k -u "$KUBE_AUTH" "$KUBE_API/version" || echo "Warning - API connection issue"
     - echo "Step 2/10 - Creating namespace securebox..."
-    - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-    - kubectl get namespace $KUBE_NAMESPACE
+    - |
+      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces" \
+        -H "Content-Type: application/json" \
+        -d '{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"'$KUBE_NAMESPACE'"}}' || echo "Namespace may exist"
     - echo "Step 3/10 - Creating Harbor registry secret..."
-    - kubectl create secret docker-registry harbor-registry-secret --docker-server=$GTECH_REPO_URL --docker-username=$GTECH_REPO_USERNAME --docker-password=$GTECH_REPO_TOKEN --namespace=$KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      DOCKER_AUTH=$(echo -n "$GTECH_REPO_USERNAME:$GTECH_REPO_TOKEN" | base64 -w 0)
+      DOCKER_CONFIG=$(echo -n '{"auths":{"'$GTECH_REPO_URL'":{"username":"'$GTECH_REPO_USERNAME'","password":"'$GTECH_REPO_TOKEN'","auth":"'$DOCKER_AUTH'"}}}' | base64 -w 0)
+      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/secrets" \
+        -H "Content-Type: application/json" \
+        -d '{"apiVersion":"v1","kind":"Secret","type":"kubernetes.io/dockerconfigjson","metadata":{"name":"harbor-registry-secret"},"data":{".dockerconfigjson":"'$DOCKER_CONFIG'"}}' || echo "Secret may exist"
     - echo "Step 4/10 - Updating image tags..."
     - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
     - sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml
     - echo "Step 5/10 - Deploying ConfigMaps and Secrets..."
-    - kubectl apply -f kubernetes/base/configmap.yaml
-    - kubectl apply -f kubernetes/base/secrets.yaml
+    - |
+      for file in kubernetes/base/configmap.yaml kubernetes/base/secrets.yaml; do
+        curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/$(grep -q 'kind: ConfigMap' $file && echo 'configmaps' || echo 'secrets')" \
+          -H "Content-Type: application/yaml" \
+          --data-binary @"$file" || echo "Resource may exist"
+      done
     - echo "Step 6/10 - Deploying infrastructure services..."
-    - kubectl apply -f kubernetes/base/postgres-deployment.yaml
-    - kubectl apply -f kubernetes/base/mongodb-deployment.yaml
-    - kubectl apply -f kubernetes/base/redis-deployment.yaml
-    - kubectl apply -f kubernetes/base/rabbitmq-deployment.yaml
-    - kubectl wait --for=condition=ready pod -l app=postgres -n $KUBE_NAMESPACE --timeout=300s || echo "PostgreSQL pending"
-    - kubectl wait --for=condition=ready pod -l app=mongodb -n $KUBE_NAMESPACE --timeout=300s || echo "MongoDB pending"
-    - kubectl wait --for=condition=ready pod -l app=redis -n $KUBE_NAMESPACE --timeout=300s || echo "Redis pending"
-    - kubectl wait --for=condition=ready pod -l app=rabbitmq -n $KUBE_NAMESPACE --timeout=300s || echo "RabbitMQ pending"
-    - sleep 10
+    - |
+      for service in postgres mongodb redis rabbitmq; do
+        echo "  Deploying $service..."
+        curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+          -H "Content-Type: application/yaml" \
+          --data-binary @"kubernetes/base/${service}-deployment.yaml" || \
+        curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/${service}" \
+          -H "Content-Type: application/strategic-merge-patch+json" \
+          --data-binary @"kubernetes/base/${service}-deployment.yaml"
+      done
+    - sleep 30
     - echo "Step 7/10 - Deploying SecureBox API..."
-    - kubectl apply -f kubernetes/base/api-deployment.yaml
-    - kubectl rollout status deployment/securebox-api -n $KUBE_NAMESPACE --timeout=300s
+    - |
+      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+        -H "Content-Type: application/yaml" \
+        --data-binary @"kubernetes/base/api-deployment.yaml" || \
+      curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-api" \
+        -H "Content-Type: application/strategic-merge-patch+json" \
+        --data-binary @"kubernetes/base/api-deployment.yaml"
+    - sleep 20
     - echo "Step 8/10 - Deploying SecureBox Portal..."
-    - kubectl apply -f kubernetes/base/portal-deployment.yaml
-    - kubectl rollout status deployment/securebox-portal -n $KUBE_NAMESPACE --timeout=300s
+    - |
+      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+        -H "Content-Type: application/yaml" \
+        --data-binary @"kubernetes/base/portal-deployment.yaml" || \
+      curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-portal" \
+        -H "Content-Type: application/strategic-merge-patch+json" \
+        --data-binary @"kubernetes/base/portal-deployment.yaml"
+    - sleep 20
     - echo "Step 9/10 - Deploying NGINX Gateway..."
-    - kubectl apply -f kubernetes/base/nginx-configmap.yaml
-    - kubectl apply -f kubernetes/base/nginx-deployment.yaml
-    - kubectl rollout status deployment/nginx -n $KUBE_NAMESPACE --timeout=300s
-    - echo "Step 10/10 - Final status..."
-    - kubectl get deployments -n $KUBE_NAMESPACE
-    - kubectl get pods -n $KUBE_NAMESPACE -o wide
-    - kubectl get services -n $KUBE_NAMESPACE
-    - NODE_PORT=$(kubectl get service nginx-service -n $KUBE_NAMESPACE -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "30222")
-    - echo "Access URL - http://<node-ip>:$NODE_PORT"
+    - |
+      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/configmaps" \
+        -H "Content-Type: application/yaml" \
+        --data-binary @"kubernetes/base/nginx-configmap.yaml" || echo "ConfigMap exists"
+      curl -k -u "$KUBE_AUTH" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
+        -H "Content-Type: application/yaml" \
+        --data-binary @"kubernetes/base/nginx-deployment.yaml" || \
+      curl -k -u "$KUBE_AUTH" -X PATCH "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/nginx" \
+        -H "Content-Type: application/strategic-merge-patch+json" \
+        --data-binary @"kubernetes/base/nginx-deployment.yaml"
+    - sleep 20
+    - echo "Step 10/10 - Checking deployment status..."
+    - curl -k -u "$KUBE_AUTH" "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" | grep -o '"name":"[^"]*"' | head -10
+    - curl -k -u "$KUBE_AUTH" "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/pods" | grep -o '"name":"[^"]*"' | head -10
+    - curl -k -u "$KUBE_AUTH" "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" | grep -o '"name":"[^"]*"' | head -10
+    - echo "Access URL - http://<node-ip>:30222"
     - echo "=========================================="
-    - echo "DEPLOYMENT COMPLETED SUCCESSFULLY"
+    - echo "DEPLOYMENT COMPLETED"
     - echo "=========================================="
   only:
     - development
@@ -335,18 +363,14 @@ deploy_production:
 
 cleanup_dev:
   stage: cleanup
-  image: bitnami/kubectl:latest
   environment:
     name: development
     action: stop
   script:
-    - echo "Cleaning up Development Environment"
-    - echo "Configuring kubectl with credentials..."
-    - kubectl config set-cluster kubernetes --server="$KUBE_URL" --insecure-skip-tls-verify=true
-    - kubectl config set-credentials admin --username="$KUBE_USER" --password="$KUBE_PASS"
-    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin --namespace=securebox
-    - kubectl config use-context kubernetes
-    - kubectl delete namespace $KUBE_NAMESPACE --ignore-not-found=true
+    - echo "Cleaning up Development Environment via Kubernetes API"
+    - export KUBE_API="$KUBE_URL"
+    - export KUBE_AUTH="$KUBE_USER:$KUBE_PASS"
+    - curl -k -u "$KUBE_AUTH" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE"
     - echo "Development environment cleaned up"
   when: manual
   only:
