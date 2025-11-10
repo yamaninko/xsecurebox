@@ -289,11 +289,7 @@ cleanup_dev:
     name: development
     action: stop
   script:
-    - echo "Cleaning up Development Environment via Kubernetes API"
-    - export KUBE_API="$KUBE_URL"
-    - KUBE_TOKEN=$(echo -n "$KUBE_USER:$KUBE_PASS" | base64 -w 0)
-    - curl -k -H "Authorization: Basic $KUBE_TOKEN" -X DELETE "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE"
-    - echo "Development environment cleaned up"
+    - bash scripts/k8s-cleanup.sh
   when: manual
   only:
     - development
