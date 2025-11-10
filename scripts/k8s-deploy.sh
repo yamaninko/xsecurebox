@@ -90,8 +90,11 @@ csplit -s -f /tmp/api- kubernetes/base/api-deployment.yaml '/^---$/' '{*}' 2>/de
 for yaml_part in /tmp/api-*; do
   if [ -s "$yaml_part" ]; then
     if grep -q "kind: Deployment" "$yaml_part"; then
+      echo "  Updating API deployment with new image..."
+      curl -k -H "$AUTH_HEADER" -X PUT "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-api" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || \
       curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "API deployment exists"
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null
     elif grep -q "kind: Service" "$yaml_part"; then
       curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
         -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "API service exists"
@@ -111,8 +114,11 @@ csplit -s -f /tmp/portal- kubernetes/base/portal-deployment.yaml '/^---$/' '{*}'
 for yaml_part in /tmp/portal-*; do
   if [ -s "$yaml_part" ]; then
     if grep -q "kind: Deployment" "$yaml_part"; then
+      echo "  Updating Portal deployment with new image..."
+      curl -k -H "$AUTH_HEADER" -X PUT "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/securebox-portal" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || \
       curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "Portal deployment exists"
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null
     elif grep -q "kind: Service" "$yaml_part"; then
       curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
         -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "Portal service exists"
@@ -135,8 +141,11 @@ csplit -s -f /tmp/nginx- kubernetes/base/nginx-deployment.yaml '/^---$/' '{*}' 2
 for yaml_part in /tmp/nginx-*; do
   if [ -s "$yaml_part" ]; then
     if grep -q "kind: Deployment" "$yaml_part"; then
+      echo "  Updating NGINX deployment..."
+      curl -k -H "$AUTH_HEADER" -X PUT "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments/nginx" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || \
       curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/apis/apps/v1/namespaces/$KUBE_NAMESPACE/deployments" \
-        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "NGINX deployment exists"
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null
     elif grep -q "kind: Service" "$yaml_part"; then
       curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/services" \
         -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "NGINX service exists"
