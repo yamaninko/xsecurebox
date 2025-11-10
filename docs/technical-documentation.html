@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Box - Teknik Dokümantasyon</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --dark-bg: #0f172a;
+            --light-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --code-bg: #1e293b;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--dark-bg);
+            color: white;
+            padding: 30px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 48px;
+        }
+        
+        .logo-text h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+        
+        .logo-text p {
+            color: var(--text-light);
+            font-size: 1.1em;
+        }
+        
+        nav {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        nav ul li a {
+            display: block;
+            padding: 15px 30px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        nav ul li a:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        main {
+            background: white;
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        h3 {
+            color: var(--secondary-color);
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+        }
+        
+        h4 {
+            color: var(--text-dark);
+            font-size: 1.3em;
+            margin: 20px 0 10px 0;
+        }
+        
+        .section {
+            margin: 40px 0;
+            padding: 30px;
+            background: var(--light-bg);
+            border-radius: 12px;
+            border-left: 5px solid var(--primary-color);
+        }
+        
+        .api-endpoint {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            transition: box-shadow 0.3s;
+        }
+        
+        .api-endpoint:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .http-method {
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .method-get {
+            background: #10b981;
+            color: white;
+        }
+        
+        .method-post {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .method-put {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .method-delete {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            color: var(--secondary-color);
+        }
+        
+        .code-block {
+            background: var(--code-bg);
+            color: #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .code-inline {
+            background: #e5e7eb;
+            color: var(--danger);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        table tr:hover {
+            background: var(--light-bg);
+        }
+        
+        .info-box {
+            background: #dbeafe;
+            border-left: 5px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info-box h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border-left: 5px solid var(--warning);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .warning-box h4 {
+            color: var(--warning);
+            margin-bottom: 10px;
+        }
+        
+        .success-box {
+            background: #d1fae5;
+            border-left: 5px solid var(--success);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .success-box h4 {
+            color: var(--success);
+            margin-bottom: 10px;
+        }
+        
+        .tab-container {
+            margin: 20px 0;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: var(--light-bg);
+            border: 2px solid #e5e7eb;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        footer {
+            background: var(--dark-bg);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .logo {
+                flex-direction: column;
+            }
+            
+            nav ul {
+                flex-direction: column;
+            }
+            
+            nav ul li a {
+                border-bottom: 1px solid #eee;
+            }
+            
+            .endpoint-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">📚</div>
+                    <div class="logo-text">
+                        <h1>Teknik Dokümantasyon</h1>
+                        <p>Secure Box API, Database ve Deployment Rehberi</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">🏠 Ana Sayfa</a></li>
+                <li><a href="#api">🌐 API</a></li>
+                <li><a href="#database">🗄️ Database</a></li>
+                <li><a href="#security">🔒 Güvenlik</a></li>
+                <li><a href="#deployment">🚀 Deployment</a></li>
+                <li><a href="architecture.html">🏗️ Mimari</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <section id="api">
+            <h2>🌐 API Dokümantasyonu</h2>
+            
+            <div class="info-box">
+                <h4>📌 Genel Bilgiler</h4>
+                <ul>
+                    <li><strong>Base URL:</strong> <code class="code-inline">http://localhost/api</code> (Production: <code class="code-inline">https://securebox.local/api</code>)</li>
+                    <li><strong>API Version:</strong> v1</li>
+                    <li><strong>Authentication:</strong> JWT Bearer Token (Header: <code class="code-inline">Authorization: Bearer {token}</code>)</li>
+                    <li><strong>Content-Type:</strong> application/json</li>
+                    <li><strong>Swagger UI:</strong> <a href="http://localhost/api/swagger" style="color: var(--primary-color);">http://localhost/api/swagger</a></li>
+                </ul>
+            </div>
+            
+            <h3>🔐 Authentication Endpoints</h3>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/auth/login</span>
+                </div>
+                <p><strong>Açıklama:</strong> Kullanıcı girişi (username ve password ile)</p>
+                <p><strong>Auth Gerekli:</strong> ❌ Hayır</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "username": "admin",
+  "password": "Admin@123"
+}
+                </div>
+                
+                <h4>Response (200 OK):</h4>
+                <div class="code-block">
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGc...",
+    "refreshToken": "eyJhbGc...",
+    "expiresIn": 900,
+    "tokenType": "Bearer",
+    "user": {
+      "userId": "guid",
+      "username": "admin",
+      "email": "admin@securebox.local",
+      "roles": ["Admin"]
+    }
+  },
+  "message": "Login successful"
+}
+                </div>
+                
+                <h4>Hata Kodları:</h4>
+                <ul>
+                    <li><code class="code-inline">401 INVALID_CREDENTIALS</code> - Geçersiz kullanıcı adı veya şifre</li>
+                    <li><code class="code-inline">500 LOGIN_ERROR</code> - Sunucu hatası</li>
+                </ul>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/auth/refresh</span>
+                </div>
+                <p><strong>Açıklama:</strong> Access token yenileme (refresh token kullanarak)</p>
+                <p><strong>Auth Gerekli:</strong> ❌ Hayır</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "refreshToken": "eyJhbGc..."
+}
+                </div>
+                
+                <h4>Response (200 OK):</h4>
+                <div class="code-block">
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbGc...",
+    "expiresIn": 900,
+    "tokenType": "Bearer"
+  }
+}
+                </div>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/auth/change-password</span>
+                </div>
+                <p><strong>Açıklama:</strong> Kullanıcı şifre değiştirme</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "currentPassword": "OldPass123!",
+  "newPassword": "NewPass123!",
+  "confirmPassword": "NewPass123!"
+}
+                </div>
+            </div>
+            
+            <h3>👥 User Management Endpoints</h3>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-get">GET</span>
+                    <span class="endpoint-path">/v1/users</span>
+                </div>
+                <p><strong>Açıklama:</strong> Tüm kullanıcıları listele (Admin only)</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet (Admin rolü)</p>
+                
+                <h4>Query Parameters:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parametre</th>
+                            <th>Tip</th>
+                            <th>Açıklama</th>
+                            <th>Varsayılan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>page</td>
+                            <td>int</td>
+                            <td>Sayfa numarası</td>
+                            <td>1</td>
+                        </tr>
+                        <tr>
+                            <td>pageSize</td>
+                            <td>int</td>
+                            <td>Sayfa başına kayıt</td>
+                            <td>20</td>
+                        </tr>
+                        <tr>
+                            <td>search</td>
+                            <td>string</td>
+                            <td>Username/email arama</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>role</td>
+                            <td>string</td>
+                            <td>Role göre filtrele</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>isActive</td>
+                            <td>bool</td>
+                            <td>Aktif durum filtresi</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/users</span>
+                </div>
+                <p><strong>Açıklama:</strong> Yeni kullanıcı oluştur (Admin only)</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet (Admin rolü)</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "username": "jane.smith",
+  "email": "jane@example.com",
+  "password": "SecurePass123!",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "roleIds": ["guid-of-client-role"]
+}
+                </div>
+            </div>
+            
+            <h3>🔑 Key Management Endpoints</h3>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-get">GET</span>
+                    <span class="endpoint-path">/v1/keys</span>
+                </div>
+                <p><strong>Açıklama:</strong> Erişim yetkisi olan anahtarları listele</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet</p>
+                
+                <h4>Query Parameters:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parametre</th>
+                            <th>Tip</th>
+                            <th>Açıklama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>status</td>
+                            <td>string</td>
+                            <td>Active, Expired, Revoked, Archived</td>
+                        </tr>
+                        <tr>
+                            <td>keyType</td>
+                            <td>string</td>
+                            <td>ApiKey, Password, Secret, Certificate</td>
+                        </tr>
+                        <tr>
+                            <td>environmentTag</td>
+                            <td>string</td>
+                            <td>DEV, TEST, UAT, PROD</td>
+                        </tr>
+                        <tr>
+                            <td>certificateId</td>
+                            <td>guid</td>
+                            <td>Belirli sertifikaya ait anahtarlar</td>
+                        </tr>
+                        <tr>
+                            <td>expiringIn30Days</td>
+                            <td>bool</td>
+                            <td>Yakında süre dolacak anahtarlar</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/keys</span>
+                </div>
+                <p><strong>Açıklama:</strong> Yeni anahtar oluştur</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "name": "DATABASE_PASSWORD",
+  "description": "Production DB password",
+  "keyType": "Password",
+  "value": "SuperSecretPassword123!",
+  "certificateId": "guid",
+  "encryptionAlgorithm": "AES256",
+  "environmentTag": "PROD",
+  "tags": ["database", "production"],
+  "validFrom": "2025-11-07T00:00:00Z",
+  "validTo": "2026-11-07T00:00:00Z"
+}
+                </div>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/keys/{keyId}/retrieve</span>
+                </div>
+                <p><strong>Açıklama:</strong> Anahtar değerini al (decrypt) - <strong>Triple Authentication</strong></p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet + Certificate + Password</p>
+                
+                <div class="warning-box">
+                    <h4>⚠️ Triple Authentication</h4>
+                    <p>Bu endpoint, hassas anahtar değerlerine erişim için üç faktörlü kimlik doğrulama gerektirir:</p>
+                    <ul>
+                        <li><strong>1. Faktör:</strong> JWT Access Token (Authorization header)</li>
+                        <li><strong>2. Faktör:</strong> Certificate Thumbprint</li>
+                        <li><strong>3. Faktör:</strong> User Password (re-authentication)</li>
+                    </ul>
+                    <p>Her erişim <strong>detaylı olarak audit log'a kaydedilir</strong> (IP, UserAgent, Timestamp).</p>
+                </div>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "reason": "Deploy to production server"
+}
+                </div>
+                
+                <h4>Response (200 OK):</h4>
+                <div class="code-block">
+{
+  "success": true,
+  "data": {
+    "keyId": "guid",
+    "name": "DATABASE_PASSWORD",
+    "value": "SuperSecretPassword123!",
+    "expiresAt": "2026-11-07T00:00:00Z",
+    "retrievedAt": "2025-11-07T07:00:00Z"
+  }
+}
+                </div>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/keys/{keyId}/rotate</span>
+                </div>
+                <p><strong>Açıklama:</strong> Anahtar rotasyonu (yeni versiyon oluştur)</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "newValue": "NewSuperSecretPassword456!",
+  "reason": "Regular rotation policy"
+}
+                </div>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/keys/{keyId}/revoke</span>
+                </div>
+                <p><strong>Açıklama:</strong> Anahtarı iptal et (revoke)</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet (Admin veya key owner)</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "reason": "Compromised key"
+}
+                </div>
+            </div>
+            
+            <h3>📜 Certificate Management Endpoints</h3>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-get">GET</span>
+                    <span class="endpoint-path">/v1/certificates</span>
+                </div>
+                <p><strong>Açıklama:</strong> Tüm sertifikaları listele</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet</p>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/certificates/upload</span>
+                </div>
+                <p><strong>Açıklama:</strong> Yeni sertifika yükle</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet (Admin rolü)</p>
+                
+                <h4>Request Body (multipart/form-data):</h4>
+                <div class="code-block">
+{
+  "name": "New Cert 2026",
+  "description": "New certificate",
+  "certificateFile": "&lt;base64-encoded-cert&gt;",
+  "password": "cert-password",
+  "isForSigning": false,
+  "isForEncryption": true
+}
+                </div>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-post">POST</span>
+                    <span class="endpoint-path">/v1/certificates/{certificateId}/revoke</span>
+                </div>
+                <p><strong>Açıklama:</strong> Sertifikayı iptal et</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet (Admin rolü)</p>
+                
+                <h4>Request Body:</h4>
+                <div class="code-block">
+{
+  "reason": "Certificate compromised"
+}
+                </div>
+            </div>
+            
+            <h3>📊 Audit Endpoints</h3>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-get">GET</span>
+                    <span class="endpoint-path">/v1/audit/trails</span>
+                </div>
+                <p><strong>Açıklama:</strong> Audit kayıtlarını sorgula</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet (Admin rolü)</p>
+                
+                <h4>Query Parameters:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parametre</th>
+                            <th>Tip</th>
+                            <th>Açıklama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>userId</td>
+                            <td>guid</td>
+                            <td>Belirli kullanıcının işlemleri</td>
+                        </tr>
+                        <tr>
+                            <td>action</td>
+                            <td>string</td>
+                            <td>İşlem tipi (örn: Key.Retrieve)</td>
+                        </tr>
+                        <tr>
+                            <td>resource</td>
+                            <td>string</td>
+                            <td>Kaynak tipi (Key, Certificate, User)</td>
+                        </tr>
+                        <tr>
+                            <td>severity</td>
+                            <td>string</td>
+                            <td>Info, Warning, Critical</td>
+                        </tr>
+                        <tr>
+                            <td>fromDate</td>
+                            <td>datetime</td>
+                            <td>Başlangıç tarihi</td>
+                        </tr>
+                        <tr>
+                            <td>toDate</td>
+                            <td>datetime</td>
+                            <td>Bitiş tarihi</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="api-endpoint">
+                <div class="endpoint-header">
+                    <span class="http-method method-get">GET</span>
+                    <span class="endpoint-path">/v1/audit/keys/{keyId}/access-logs</span>
+                </div>
+                <p><strong>Açıklama:</strong> Belirli anahtarın erişim geçmişi</p>
+                <p><strong>Auth Gerekli:</strong> ✅ Evet</p>
+            </div>
+            
+            <h3>📌 Response Formatları</h3>
+            
+            <div class="success-box">
+                <h4>✅ Başarılı Response</h4>
+                <div class="code-block">
+{
+  "success": true,
+  "data": { /* response data */ },
+  "message": "Operation successful"
+}
+                </div>
+            </div>
+            
+            <div class="warning-box">
+                <h4>❌ Hata Response</h4>
+                <div class="code-block">
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message"
+  }
+}
+                </div>
+                
+                <h4>Yaygın Hata Kodları:</h4>
+                <ul>
+                    <li><code class="code-inline">INVALID_CREDENTIALS</code> - Kimlik doğrulama başarısız</li>
+                    <li><code class="code-inline">UNAUTHORIZED</code> - Bu işlem için yetkiniz yok</li>
+                    <li><code class="code-inline">NOT_FOUND</code> - Kaynak bulunamadı</li>
+                    <li><code class="code-inline">VALIDATION_ERROR</code> - Request validasyonu başarısız</li>
+                    <li><code class="code-inline">CONFLICT</code> - Kaynak zaten mevcut</li>
+                    <li><code class="code-inline">SERVER_ERROR</code> - Sunucu hatası</li>
+                </ul>
+            </div>
+            
+            <h3>⚡ Rate Limiting</h3>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint Tipi</th>
+                        <th>Limit</th>
+                        <th>Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Default</td>
+                        <td>100 req/min</td>
+                        <td>IP başına genel limit</td>
+                    </tr>
+                    <tr>
+                        <td>Admin Endpoints</td>
+                        <td>50 req/min</td>
+                        <td>Kullanıcı/rol yönetimi</td>
+                    </tr>
+                    <tr>
+                        <td>Key Retrieval</td>
+                        <td>10 req/min</td>
+                        <td>Anahtar başına retrieve limiti</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <p style="margin-top: 20px;"><strong>Headers:</strong> <code class="code-inline">X-RateLimit-Remaining</code>, <code class="code-inline">X-RateLimit-Reset</code></p>
+        </section>
+        
+        <section id="database">
+            <h2>🗄️ Database Şeması</h2>
+            
+            <h3>📊 PostgreSQL (Ana Veritabanı)</h3>
+            
+            <div class="info-box">
+                <h4>📌 Veritabanı Bilgileri</h4>
+                <ul>
+                    <li><strong>DBMS:</strong> PostgreSQL 16 Alpine</li>
+                    <li><strong>Database Name:</strong> secureboxdb</li>
+                    <li><strong>ORM:</strong> Entity Framework Core</li>
+                    <li><strong>Migration:</strong> EF Core Migrations</li>
+                    <li><strong>Connection String:</strong> <code class="code-inline">Host=postgres;Port=5432;Database=secureboxdb;Username=securebox_user</code></li>
+                </ul>
+            </div>
+            
+            <h4>Tablo Listesi ve İlişkiler</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tablo</th>
+                        <th>Açıklama</th>
+                        <th>Primary Key</th>
+                        <th>Önemli İlişkiler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Users</strong></td>
+                        <td>Sistem kullanıcıları</td>
+                        <td>UserId (UUID)</td>
+                        <td>→ UserRoles, Keys, Certificates</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Roles</strong></td>
+                        <td>Roller (Admin, Client, Service)</td>
+                        <td>RoleId (UUID)</td>
+                        <td>→ UserRoles, RolePermissions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Permissions</strong></td>
+                        <td>Granular izinler</td>
+                        <td>PermissionId (UUID)</td>
+                        <td>→ RolePermissions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>UserRoles</strong></td>
+                        <td>Kullanıcı-Rol ilişkisi (M:N)</td>
+                        <td>UserRoleId (UUID)</td>
+                        <td>Users ← → Roles</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RolePermissions</strong></td>
+                        <td>Rol-İzin ilişkisi (M:N)</td>
+                        <td>RolePermissionId (UUID)</td>
+                        <td>Roles ← → Permissions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Certificates</strong></td>
+                        <td>X.509 sertifikaları</td>
+                        <td>CertificateId (UUID)</td>
+                        <td>→ Keys</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Keys</strong></td>
+                        <td>Şifrelenmiş anahtarlar</td>
+                        <td>KeyId (UUID)</td>
+                        <td>← Certificates, → KeyAccessLogs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>KeyAccessLogs</strong></td>
+                        <td>Anahtar erişim geçmişi</td>
+                        <td>AccessLogId (UUID)</td>
+                        <td>← Keys</td>
+                    </tr>
+                    <tr>
+                        <td><strong>UserSessions</strong></td>
+                        <td>JWT refresh token tracking</td>
+                        <td>SessionId (UUID)</td>
+                        <td>← Users</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AuditTrails</strong></td>
+                        <td>Genel audit kayıtları</td>
+                        <td>AuditId (UUID)</td>
+                        <td>← Users (optional)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>Keys Tablosu Detayı (En Kritik Tablo)</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kolon</th>
+                        <th>Tip</th>
+                        <th>Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>KeyId</td>
+                        <td>UUID</td>
+                        <td>Primary key</td>
+                    </tr>
+                    <tr>
+                        <td>Name</td>
+                        <td>VARCHAR(200)</td>
+                        <td>Anahtar ismi (örn: PROD_DB_PASSWORD)</td>
+                    </tr>
+                    <tr>
+                        <td>EncryptedValue</td>
+                        <td>BYTEA</td>
+                        <td>AES-256-GCM ile şifrelenmiş değer</td>
+                    </tr>
+                    <tr>
+                        <td>EncryptionIV</td>
+                        <td>BYTEA</td>
+                        <td>Initialization Vector (16 bytes)</td>
+                    </tr>
+                    <tr>
+                        <td>EncryptionTag</td>
+                        <td>BYTEA</td>
+                        <td>Authentication Tag (16 bytes)</td>
+                    </tr>
+                    <tr>
+                        <td>CertificateId</td>
+                        <td>UUID</td>
+                        <td>Şifreleme için kullanılan sertifika (FK)</td>
+                    </tr>
+                    <tr>
+                        <td>Version</td>
+                        <td>INT</td>
+                        <td>Key versiyonu (rotation için)</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td>VARCHAR(20)</td>
+                        <td>Active, Expired, Revoked, Archived</td>
+                    </tr>
+                    <tr>
+                        <td>ExpiresAt</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Süre dolum tarihi (nullable)</td>
+                    </tr>
+                    <tr>
+                        <td>OwnerUserId</td>
+                        <td>UUID</td>
+                        <td>Anahtar sahibi (FK)</td>
+                    </tr>
+                    <tr>
+                        <td>AccessCount</td>
+                        <td>BIGINT</td>
+                        <td>Kaç kez erişildiği</td>
+                    </tr>
+                    <tr>
+                        <td>LastAccessedAt</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Son erişim zamanı</td>
+                    </tr>
+                    <tr>
+                        <td>CreatedAt</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Oluşturulma zamanı</td>
+                    </tr>
+                    <tr>
+                        <td>DeletedAt</td>
+                        <td>TIMESTAMPTZ</td>
+                        <td>Soft delete için (nullable)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>🔴 Redis (Cache & Session)</h3>
+            
+            <div class="info-box">
+                <h4>📌 Redis Kullanım Alanları</h4>
+                <ul>
+                    <li><strong>Session Store:</strong> JWT refresh token'lar için cache</li>
+                    <li><strong>Token Blacklist:</strong> Logout edilen token'ların geçersiz kılınması</li>
+                    <li><strong>Metadata Cache:</strong> Sık erişilen user/role/permission bilgileri</li>
+                    <li><strong>Rate Limiting:</strong> API rate limit counters</li>
+                    <li><strong>TTL:</strong> Key bazlı otomatik expiration</li>
+                </ul>
+            </div>
+            
+            <h3>🍃 MongoDB (Log Store)</h3>
+            
+            <div class="info-box">
+                <h4>📌 MongoDB Collections</h4>
+                <ul>
+                    <li><strong>audit_logs:</strong> Detaylı işlem logları (JSON format)</li>
+                    <li><strong>key_access_logs:</strong> Anahtar erişim history</li>
+                    <li><strong>system_logs:</strong> Uygulama logları (Serilog)</li>
+                    <li><strong>Retention Policy:</strong> 90 gün (configurable)</li>
+                    <li><strong>Indexing:</strong> timestamp, userId, action, severity</li>
+                </ul>
+            </div>
+            
+            <h4>audit_logs Document Örneği:</h4>
+            <div class="code-block">
+{
+  "_id": ObjectId("..."),
+  "userId": "guid",
+  "username": "admin",
+  "action": "Key.Retrieve",
+  "resource": "Key",
+  "resourceId": "guid",
+  "details": {
+    "keyName": "PROD_DB_PASSWORD",
+    "reason": "Deploy to production",
+    "success": true
+  },
+  "ipAddress": "192.168.1.10",
+  "userAgent": "Mozilla/5.0...",
+  "timestamp": ISODate("2025-11-07T07:30:00Z"),
+  "severity": "Critical"
+}
+            </div>
+        </section>
+        
+        <section id="security">
+            <h2>🔒 Güvenlik Mimarisi</h2>
+            
+            <h3>🔐 Şifreleme Mekanizmaları</h3>
+            
+            <div class="section">
+                <h4>1. Anahtar Şifreleme (AES-256-GCM)</h4>
+                <p>Tüm hassas key value'lar AES-256-GCM (Galois/Counter Mode) ile şifrelenir:</p>
+                <ul>
+                    <li><strong>Algoritma:</strong> AES-256-GCM</li>
+                    <li><strong>Key Size:</strong> 256 bit</li>
+                    <li><strong>IV (Initialization Vector):</strong> 16 bytes (her şifreleme için unique)</li>
+                    <li><strong>Authentication Tag:</strong> 16 bytes (integrity check)</li>
+                    <li><strong>Certificate-Based:</strong> X.509 certificate private key ile master key şifreleme</li>
+                </ul>
+                
+                <h4>Şifreleme Akışı:</h4>
+                <div class="code-block">
+1. User, key value girer: "SuperSecret123!"
+2. Random IV generate edilir (16 bytes)
+3. Certificate'ten encryption key türetilir
+4. AES-256-GCM ile şifreleme: 
+   Ciphertext = AES-GCM.Encrypt(plaintext, key, IV)
+5. Authentication Tag oluşturulur (integrity)
+6. PostgreSQL'e kaydedilir:
+   - EncryptedValue: ciphertext
+   - EncryptionIV: IV
+   - EncryptionTag: tag
+   - CertificateId: sertifika referansı
+                </div>
+            </div>
+            
+            <div class="section">
+                <h4>2. Password Hashing (BCrypt)</h4>
+                <ul>
+                    <li><strong>Algoritma:</strong> BCrypt</li>
+                    <li><strong>Work Factor:</strong> 11 (2^11 iterations)</li>
+                    <li><strong>Salt:</strong> Otomatik random salt (hash'e embedded)</li>
+                    <li><strong>Rainbow Table Koruması:</strong> Salt sayesinde</li>
+                    <li><strong>Timing Attack Koruması:</strong> Constant-time comparison</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h4>3. JWT Token Güvenliği</h4>
+                <ul>
+                    <li><strong>Algoritma:</strong> HS256 (HMAC-SHA256)</li>
+                    <li><strong>Secret Key:</strong> 256-bit secret (environment variable)</li>
+                    <li><strong>Access Token Expiry:</strong> 15 dakika</li>
+                    <li><strong>Refresh Token Expiry:</strong> 7 gün</li>
+                    <li><strong>Claims:</strong> userId, username, roles, permissions</li>
+                    <li><strong>Token Revocation:</strong> Redis blacklist (logout)</li>
+                </ul>
+            </div>
+            
+            <h3>🛡️ Triple Authentication</h3>
+            
+            <div class="warning-box">
+                <h4>🔐 Üç Faktörlü Kimlik Doğrulama</h4>
+                <p>Hassas işlemler (key retrieve, key rotate) için üç faktör gereklidir:</p>
+                
+                <ol style="margin-left: 20px; margin-top: 15px;">
+                    <li style="margin: 10px 0;">
+                        <strong>1. JWT Token (Something You Have)</strong>
+                        <p>Authorization header'da Bearer token</p>
+                    </li>
+                    <li style="margin: 10px 0;">
+                        <strong>2. Certificate Thumbprint (Something You Have)</strong>
+                        <p>Valid certificate ownership kanıtı</p>
+                    </li>
+                    <li style="margin: 10px 0;">
+                        <strong>3. User Password (Something You Know)</strong>
+                        <p>Re-authentication (şifre tekrar girilir)</p>
+                    </li>
+                </ol>
+                
+                <p style="margin-top: 15px;"><strong>Kullanım Senaryosu:</strong> Key retrieve, certificate revoke, user deletion gibi kritik işlemler.</p>
+            </div>
+            
+            <h3>📝 Audit Trail</h3>
+            
+            <div class="success-box">
+                <h4>✅ Audit Logging Stratejisi</h4>
+                <ul>
+                    <li><strong>Immutable Logs:</strong> Audit kayıtları asla silinemez/güncellenemez</li>
+                    <li><strong>Multi-Store:</strong> PostgreSQL (summary) + MongoDB (detail) + ELK (search)</li>
+                    <li><strong>Logged Data:</strong> userId, action, resource, timestamp, IP, UserAgent</li>
+                    <li><strong>Severity Levels:</strong> Info, Warning, Critical</li>
+                    <li><strong>Compliance:</strong> GDPR, ISO 27001 compliance ready</li>
+                </ul>
+                
+                <h4>Audit Edilen İşlemler:</h4>
+                <ul>
+                    <li>Login/Logout</li>
+                    <li>Key Create/Retrieve/Rotate/Revoke/Delete</li>
+                    <li>Certificate Upload/Revoke/Delete</li>
+                    <li>User Create/Update/Delete</li>
+                    <li>Role/Permission değişiklikleri</li>
+                    <li>Failed authentication attempts</li>
+                </ul>
+            </div>
+            
+            <h3>🚨 Güvenlik Best Practices</h3>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kategori</th>
+                        <th>Önlem</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Network</td>
+                        <td>TLS 1.3 zorunlu (production)</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Authentication</td>
+                        <td>JWT + Triple auth for sensitive ops</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Authorization</td>
+                        <td>Role-based access control (RBAC)</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Data at Rest</td>
+                        <td>AES-256-GCM encryption</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Password</td>
+                        <td>BCrypt hashing + complexity rules</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Session</td>
+                        <td>Short-lived tokens + refresh strategy</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Rate Limiting</td>
+                        <td>Nginx level DDoS protection</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Audit</td>
+                        <td>Comprehensive logging (immutable)</td>
+                        <td>✅ Uygulandı</td>
+                    </tr>
+                    <tr>
+                        <td>Vulnerability Scan</td>
+                        <td>Regular security audits</td>
+                        <td>🔜 Planlandı</td>
+                    </tr>
+                    <tr>
+                        <td>Penetration Test</td>
+                        <td>External pen-test</td>
+                        <td>🔜 Planlandı</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        
+        <section id="deployment">
+            <h2>🚀 Deployment Rehberi</h2>
+            
+            <h3>🐳 Docker Compose Deployment</h3>
+            
+            <div class="info-box">
+                <h4>📋 Gereksinimler</h4>
+                <ul>
+                    <li>Docker Engine 20.10+</li>
+                    <li>Docker Compose 2.0+</li>
+                    <li>Minimum 8GB RAM</li>
+                    <li>20GB Disk Space</li>
+                </ul>
+            </div>
+            
+            <h4>Kurulum Adımları:</h4>
+            
+            <div class="code-block">
+# 1. Projeyi klonlayın
+cd /Users/gtmac29/projects/secure-box
+
+# 2. Environment değişkenlerini ayarlayın (optional)
+export POSTGRES_PASSWORD="YourStrongPassword123!"
+export REDIS_PASSWORD="YourRedisPassword123!"
+export MONGO_PASSWORD="YourMongoPassword123!"
+
+# 3. Tüm servisleri başlatın
+docker-compose up -d
+
+# 4. Servis durumlarını kontrol edin
+docker-compose ps
+
+# 5. Logları izleyin
+docker-compose logs -f
+
+# 6. Belirli bir servisin loglarını izleyin
+docker-compose logs -f api-1
+
+# 7. Servisleri yeniden başlatın
+docker-compose restart
+
+# 8. Servisleri durdurun
+docker-compose stop
+
+# 9. Servisleri tamamen kaldırın (volumes korunur)
+docker-compose down
+
+# 10. Servisleri volumes ile birlikte kaldırın (DİKKAT: Veri kaybı!)
+docker-compose down -v
+            </div>
+            
+            <h4>Container Servisleri:</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Servis</th>
+                        <th>Container Name</th>
+                        <th>Port</th>
+                        <th>Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>nginx</td>
+                        <td>securebox-nginx</td>
+                        <td>80, 443</td>
+                        <td>Load balancer & reverse proxy</td>
+                    </tr>
+                    <tr>
+                        <td>api-1</td>
+                        <td>securebox-api-1</td>
+                        <td>5002</td>
+                        <td>ASP.NET Core API replica 1</td>
+                    </tr>
+                    <tr>
+                        <td>api-2</td>
+                        <td>securebox-api-2</td>
+                        <td>5001</td>
+                        <td>ASP.NET Core API replica 2</td>
+                    </tr>
+                    <tr>
+                        <td>portal</td>
+                        <td>securebox-portal</td>
+                        <td>-</td>
+                        <td>Angular frontend</td>
+                    </tr>
+                    <tr>
+                        <td>postgres</td>
+                        <td>securebox-postgres</td>
+                        <td>5432</td>
+                        <td>PostgreSQL database</td>
+                    </tr>
+                    <tr>
+                        <td>redis</td>
+                        <td>securebox-redis</td>
+                        <td>6379</td>
+                        <td>Redis cache</td>
+                    </tr>
+                    <tr>
+                        <td>mongodb</td>
+                        <td>securebox-mongodb</td>
+                        <td>27017</td>
+                        <td>MongoDB log store</td>
+                    </tr>
+                    <tr>
+                        <td>rabbitmq</td>
+                        <td>securebox-rabbitmq</td>
+                        <td>5672, 15672</td>
+                        <td>RabbitMQ message broker</td>
+                    </tr>
+                    <tr>
+                        <td>elasticsearch</td>
+                        <td>securebox-elasticsearch</td>
+                        <td>9200</td>
+                        <td>Elasticsearch log indexing</td>
+                    </tr>
+                    <tr>
+                        <td>logstash</td>
+                        <td>securebox-logstash</td>
+                        <td>5044</td>
+                        <td>Logstash pipeline</td>
+                    </tr>
+                    <tr>
+                        <td>kibana</td>
+                        <td>securebox-kibana</td>
+                        <td>5601</td>
+                        <td>Kibana dashboard</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>☸️ Kubernetes Deployment</h3>
+            
+            <div class="info-box">
+                <h4>📋 Gereksinimler</h4>
+                <ul>
+                    <li>Kubernetes Cluster 1.28+</li>
+                    <li>kubectl CLI tool</li>
+                    <li>Kustomize (optional, kubectl içinde built-in)</li>
+                    <li>Container Registry (DockerHub, ECR, GCR, vb.)</li>
+                </ul>
+            </div>
+            
+            <h4>Kubernetes Deployment Adımları:</h4>
+            
+            <div class="code-block">
+# 1. Docker image'larını build edin
+cd src/backend
+docker build -t your-registry/securebox-api:latest -f SecureBox.API/Dockerfile .
+
+cd ../frontend
+docker build -t your-registry/securebox-portal:latest .
+
+# 2. Image'ları registry'e push edin
+docker push your-registry/securebox-api:latest
+docker push your-registry/securebox-portal:latest
+
+# 3. Secrets oluşturun
+kubectl create secret generic securebox-secrets \
+  --from-literal=postgres-password=YourPassword \
+  --from-literal=redis-password=YourPassword \
+  --from-literal=mongo-password=YourPassword \
+  --from-literal=jwt-secret=YourJwtSecret \
+  -n securebox
+
+# 4. Development ortamı için deploy
+cd kubernetes/overlays/dev
+kubectl apply -k .
+
+# 5. Production ortamı için deploy
+cd kubernetes/overlays/prod
+kubectl apply -k .
+
+# 6. Deployment durumunu kontrol edin
+kubectl get pods -n securebox
+kubectl get services -n securebox
+
+# 7. Logs kontrol
+kubectl logs -f deployment/securebox-api -n securebox
+
+# 8. Port forwarding (local test)
+kubectl port-forward service/securebox-nginx 8080:80 -n securebox
+            </div>
+            
+            <h3>🔧 Konfigürasyon</h3>
+            
+            <h4>Environment Variables (API):</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Açıklama</th>
+                        <th>Varsayılan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>ASPNETCORE_ENVIRONMENT</td>
+                        <td>Ortam (Development/Production)</td>
+                        <td>Production</td>
+                    </tr>
+                    <tr>
+                        <td>ConnectionStrings__PostgreSQL</td>
+                        <td>PostgreSQL bağlantı string</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>ConnectionStrings__Redis</td>
+                        <td>Redis bağlantı string</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>ConnectionStrings__MongoDB</td>
+                        <td>MongoDB bağlantı string</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>JwtSettings__SecretKey</td>
+                        <td>JWT secret key (256-bit)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>JwtSettings__Issuer</td>
+                        <td>JWT issuer</td>
+                        <td>SecureBox</td>
+                    </tr>
+                    <tr>
+                        <td>JwtSettings__Audience</td>
+                        <td>JWT audience</td>
+                        <td>SecureBox-Users</td>
+                    </tr>
+                    <tr>
+                        <td>EnableSwagger</td>
+                        <td>Swagger UI aktif/pasif</td>
+                        <td>false (prod)</td>
+                    </tr>
+                    <tr>
+                        <td>DisableHttpsRedirect</td>
+                        <td>HTTPS redirect devre dışı</td>
+                        <td>false</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>📊 Monitoring & Health Checks</h3>
+            
+            <h4>Health Check Endpoints:</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Açıklama</th>
+                        <th>Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/health</td>
+                        <td>API health status</td>
+                        <td>200 OK / 503 Unhealthy</td>
+                    </tr>
+                    <tr>
+                        <td>/api/swagger</td>
+                        <td>API documentation</td>
+                        <td>Swagger UI</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h4>Monitoring Araçları:</h4>
+            
+            <ul>
+                <li><strong>Kibana:</strong> http://localhost:5601 - Log visualization</li>
+                <li><strong>RabbitMQ Management:</strong> http://localhost:15672 - Queue monitoring</li>
+                <li><strong>Docker Stats:</strong> <code class="code-inline">docker stats</code> - Container resource usage</li>
+                <li><strong>Kubernetes Dashboard:</strong> <code class="code-inline">kubectl proxy</code> + Dashboard UI</li>
+            </ul>
+            
+            <h3>💾 Backup & Restore</h3>
+            
+            <h4>PostgreSQL Backup:</h4>
+            <div class="code-block">
+# Backup
+docker exec securebox-postgres pg_dump -U securebox_user secureboxdb > backup_$(date +%Y%m%d).sql
+
+# Restore
+cat backup_20251110.sql | docker exec -i securebox-postgres psql -U securebox_user secureboxdb
+            </div>
+            
+            <h4>MongoDB Backup:</h4>
+            <div class="code-block">
+# Backup
+docker exec securebox-mongodb mongodump --out /backup
+
+# Restore
+docker exec securebox-mongodb mongorestore /backup
+            </div>
+            
+            <h3>🔄 Update & Rollback</h3>
+            
+            <h4>Docker Compose Update:</h4>
+            <div class="code-block">
+# Pull yeni image'lar
+docker-compose pull
+
+# Servisleri yeniden oluştur ve başlat
+docker-compose up -d
+
+# Rollback (önceki image'a dön)
+# docker-compose.yml dosyasında image tag'ini değiştir, sonra:
+docker-compose up -d
+            </div>
+            
+            <h4>Kubernetes Update:</h4>
+            <div class="code-block">
+# Yeni image ile deployment güncelle
+kubectl set image deployment/securebox-api securebox-api=your-registry/securebox-api:v1.1 -n securebox
+
+# Rollout durumu izle
+kubectl rollout status deployment/securebox-api -n securebox
+
+# Rollback
+kubectl rollout undo deployment/securebox-api -n securebox
+            </div>
+        </section>
+        
+        <section style="margin-top: 50px; padding: 30px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; border-radius: 12px;">
+            <h2 style="color: white; border-bottom: 2px solid white;">📚 Ek Kaynaklar</h2>
+            <ul style="margin-top: 20px; line-height: 2;">
+                <li><a href="01-component-diagram.md" style="color: white;">📊 Component Diagram (Markdown)</a></li>
+                <li><a href="02-database-schema.md" style="color: white;">🗄️ Database Schema (Detaylı)</a></li>
+                <li><a href="03-api-endpoints.md" style="color: white;">🌐 API Endpoints (Markdown)</a></li>
+                <li><a href="08-security-checklist.md" style="color: white;">🔒 Security Checklist</a></li>
+                <li><a href="09-testing-plan.md" style="color: white;">🧪 Testing Plan</a></li>
+                <li><a href="10-feature-backlog.md" style="color: white;">📋 Feature Backlog</a></li>
+            </ul>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.1em; margin-bottom: 10px;">
+                <strong>Secure Box - Teknik Dokümantasyon</strong>
+            </p>
+            <p>Versiyon: 1.0.0 MVP | Son Güncelleme: 2025-11-10</p>
+            <p style="margin-top: 15px;">
+                <a href="index.html" style="color: var(--accent-color); text-decoration: none;">← Ana Sayfaya Dön</a> | 
+                <a href="architecture.html" style="color: var(--accent-color); text-decoration: none; margin-left: 20px;">Mimari →</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
+

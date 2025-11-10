@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Box - Sistem Mimarisi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --dark-bg: #0f172a;
+            --light-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--dark-bg);
+            color: white;
+            padding: 30px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 48px;
+        }
+        
+        .logo-text h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+        
+        .logo-text p {
+            color: var(--text-light);
+            font-size: 1.1em;
+        }
+        
+        nav {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        nav ul li a {
+            display: block;
+            padding: 15px 30px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        nav ul li a:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        main {
+            background: white;
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        h3 {
+            color: var(--secondary-color);
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+        }
+        
+        h4 {
+            color: var(--text-dark);
+            font-size: 1.3em;
+            margin: 20px 0 10px 0;
+        }
+        
+        .architecture-diagram {
+            background: var(--dark-bg);
+            color: #10b981;
+            padding: 30px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        .layer-section {
+            background: var(--light-bg);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            border-left: 5px solid var(--primary-color);
+        }
+        
+        .layer-section h3 {
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .component-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-color);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .component-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        
+        .component-card h4 {
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+        
+        .component-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .component-card ul li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .component-card ul li:before {
+            content: "▸ ";
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .flow-section {
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        
+        .flow-section h3 {
+            color: white;
+            border-bottom: 2px solid white;
+            padding-bottom: 10px;
+        }
+        
+        .flow-steps {
+            background: white;
+            color: var(--text-dark);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .flow-step {
+            padding: 15px;
+            margin: 10px 0;
+            background: var(--light-bg);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 5px;
+        }
+        
+        .flow-step strong {
+            color: var(--primary-color);
+        }
+        
+        .info-box {
+            background: #e0f2fe;
+            border-left: 5px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info-box h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border-left: 5px solid var(--warning);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .warning-box h4 {
+            color: var(--warning);
+            margin-bottom: 10px;
+        }
+        
+        .success-box {
+            background: #d1fae5;
+            border-left: 5px solid var(--success);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .success-box h4 {
+            color: var(--success);
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        table tr:hover {
+            background: var(--light-bg);
+        }
+        
+        footer {
+            background: var(--dark-bg);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .logo {
+                flex-direction: column;
+            }
+            
+            nav ul {
+                flex-direction: column;
+            }
+            
+            nav ul li a {
+                border-bottom: 1px solid #eee;
+            }
+            
+            .architecture-diagram {
+                font-size: 0.7em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🏗️</div>
+                    <div class="logo-text">
+                        <h1>Sistem Mimarisi</h1>
+                        <p>Secure Box Mimari Dokümantasyonu</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">🏠 Ana Sayfa</a></li>
+                <li><a href="#overview">📊 Genel Bakış</a></li>
+                <li><a href="#layers">🏛️ Katmanlar</a></li>
+                <li><a href="#data-flow">🔄 Veri Akışı</a></li>
+                <li><a href="technical-documentation.html">📚 Teknik Döküman</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <section id="overview">
+            <h2>📊 Sistem Genel Bakışı</h2>
+            <p style="font-size: 1.2em; line-height: 1.8; margin: 20px 0;">
+                Secure Box, modern microservices mimarisine dayanan, katmanlı bir yapıya sahiptir. 
+                Sistem, frontend, API, veri ve altyapı katmanlarından oluşur. Her katman belirli 
+                sorumlulukları üstlenir ve diğer katmanlarla tanımlı arayüzler üzerinden iletişim kurar.
+            </p>
+            
+            <div class="architecture-diagram">
+<pre>
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         İSTEMCİ KATMANI (CLIENT LAYER)                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
+│  │ Web Portal   │  │ Mobile App   │  │ Service/SDK  │                  │
+│  │  (Angular)   │  │   (Future)   │  │   Clients    │                  │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘                  │
+└─────────┼──────────────────┼──────────────────┼──────────────────────────┘
+          │                  │                  │
+          └──────────────────┼──────────────────┘
+                             ▼
+                    ┌────────────────┐
+                    │  Nginx LB      │  (Load Balancer + TLS Termination)
+                    │  (Port 80/443) │
+                    └───────┬────────┘
+                            │
+          ┌─────────────────┴─────────────────┐
+          ▼                                   ▼
+┌─────────────────┐                  ┌─────────────────┐
+│   API Instance 1│                  │   API Instance 2│
+│  ASP.NET Core 9 │                  │  ASP.NET Core 9 │
+│   (Port 5000)   │                  │   (Port 5000)   │
+└────────┬────────┘                  └────────┬────────┘
+         │                                    │
+         └────────────────┬───────────────────┘
+                          │
+         ┌────────────────┴────────────────┬────────────────┬──────────────┐
+         ▼                                 ▼                ▼              ▼
+┌─────────────────┐           ┌─────────────────┐  ┌─────────────┐  ┌──────────┐
+│   PostgreSQL    │           │     Redis       │  │   MongoDB   │  │ RabbitMQ │
+│  (Core Data)    │           │ (Cache/Session) │  │(Audit Logs) │  │(Messages)│
+│   Port 5432     │           │   Port 6379     │  │ Port 27017  │  │Port 5672 │
+└─────────────────┘           └─────────────────┘  └─────────────┘  └──────────┘
+                                                            │
+                                                            ▼
+                                               ┌────────────────────┐
+                                               │  Elasticsearch     │
+                                               │ (Log Search/Index) │
+                                               │     Port 9200      │
+                                               └──────────┬─────────┘
+                                                          │
+                                          ┌───────────────┴───────────────┐
+                                          ▼                               ▼
+                                   ┌─────────────┐                ┌─────────────┐
+                                   │  Logstash   │                │   Kibana    │
+                                   │(Log Pipeline│                │(Log Visualiz│
+                                   │  Port 5044) │                │  Port 5601) │
+                                   └─────────────┘                └─────────────┘
+</pre>
+            </div>
+        </section>
+        
+        <section id="layers">
+            <h2>🏛️ Sistem Katmanları</h2>
+            
+            <div class="layer-section">
+                <h3>🎨 1. Frontend Katmanı (Presentation Layer)</h3>
+                <p>Kullanıcılarla etkileşim sağlayan, modern ve responsive arayüz katmanıdır.</p>
+                
+                <div class="component-grid">
+                    <div class="component-card">
+                        <h4>Angular Web Portal</h4>
+                        <ul>
+                            <li><strong>Teknoloji:</strong> Angular 18+ Standalone</li>
+                            <li><strong>UI Framework:</strong> Angular Material</li>
+                            <li><strong>State Management:</strong> RxJS</li>
+                            <li><strong>Routing:</strong> Angular Router with Guards</li>
+                            <li><strong>HTTP Client:</strong> Angular HttpClient</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>Özellikler</h4>
+                        <ul>
+                            <li>Kullanıcı kimlik doğrulama ve oturum yönetimi</li>
+                            <li>Dashboard ve istatistikler</li>
+                            <li>Anahtar ve sertifika yönetimi</li>
+                            <li>Kullanıcı ve rol yönetimi</li>
+                            <li>Audit log görüntüleyici</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>Güvenlik</h4>
+                        <ul>
+                            <li>JWT token storage (localStorage/sessionStorage)</li>
+                            <li>Route guards (role-based)</li>
+                            <li>HTTPS zorunlu (production)</li>
+                            <li>XSS koruması (Angular sanitization)</li>
+                            <li>CSRF token yönetimi</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="layer-section">
+                <h3>⚙️ 2. API Katmanı (Application Layer)</h3>
+                <p>İş mantığının yönetildiği, kimlik doğrulama ve yetkilendirmenin yapıldığı katman.</p>
+                
+                <div class="component-grid">
+                    <div class="component-card">
+                        <h4>ASP.NET Core 9 API</h4>
+                        <ul>
+                            <li><strong>Framework:</strong> ASP.NET Core 9</li>
+                            <li><strong>ORM:</strong> Entity Framework Core</li>
+                            <li><strong>API Docs:</strong> Swagger/OpenAPI</li>
+                            <li><strong>Logging:</strong> Serilog</li>
+                            <li><strong>Deployment:</strong> 2+ Replicas</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>Controllers</h4>
+                        <ul>
+                            <li>AuthController - Login, logout, token yenileme</li>
+                            <li>UsersController - Kullanıcı CRUD işlemleri</li>
+                            <li>RolesController - Rol ve izin yönetimi</li>
+                            <li>KeysController - Anahtar CRUD, retrieve, rotate</li>
+                            <li>CertificatesController - Sertifika yönetimi</li>
+                            <li>AuditController - Audit log sorgulama</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>Services (Business Logic)</h4>
+                        <ul>
+                            <li>AuthService - Kimlik doğrulama</li>
+                            <li>UserService - Kullanıcı yönetimi</li>
+                            <li>KeyService - Anahtar yaşam döngüsü</li>
+                            <li>EncryptionService - Şifreleme/deşifreleme</li>
+                            <li>AuditService - Audit logging</li>
+                            <li>MessageBrokerService - RabbitMQ entegrasyonu</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h4>🔐 Authentication & Authorization</h4>
+                    <ul>
+                        <li><strong>JWT Tokens:</strong> Access token (15 dakika) + Refresh token (7 gün)</li>
+                        <li><strong>Roller:</strong> Admin, Client, Service (+ özel roller)</li>
+                        <li><strong>İzinler:</strong> Resource-Action based (örn: Key.Read, Certificate.Create)</li>
+                        <li><strong>Triple Auth:</strong> Hassas işlemler için Token + Certificate + Password</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="layer-section">
+                <h3>🗄️ 3. Veri Katmanı (Data Layer)</h3>
+                <p>Tüm verilerin kalıcı olarak saklandığı ve yönetildiği katman.</p>
+                
+                <div class="component-grid">
+                    <div class="component-card">
+                        <h4>PostgreSQL (Ana Veritabanı)</h4>
+                        <ul>
+                            <li><strong>Versiyon:</strong> PostgreSQL 16 Alpine</li>
+                            <li><strong>Amaç:</strong> İlişkisel veri (ACID)</li>
+                            <li><strong>Tablolar:</strong> Users, Roles, Keys, Certificates, Audit</li>
+                            <li><strong>Özellikler:</strong> Foreign keys, indexes, triggers</li>
+                            <li><strong>Backup:</strong> Otomatik daily backups</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>Redis (Cache & Session)</h4>
+                        <ul>
+                            <li><strong>Versiyon:</strong> Redis 7 Alpine</li>
+                            <li><strong>Amaç:</strong> Cache ve session yönetimi</li>
+                            <li><strong>Kullanım:</strong> JWT blacklist, metadata cache</li>
+                            <li><strong>TTL:</strong> Key bazlı yaşam süresi</li>
+                            <li><strong>Persistence:</strong> AOF (Append Only File)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>MongoDB (Log Store)</h4>
+                        <ul>
+                            <li><strong>Versiyon:</strong> MongoDB 7</li>
+                            <li><strong>Amaç:</strong> Yüksek hacimli log verisi</li>
+                            <li><strong>Collections:</strong> audit_logs, key_access_logs</li>
+                            <li><strong>Retention:</strong> 90 gün (varsayılan)</li>
+                            <li><strong>Indexing:</strong> Timestamp, userId, action</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 30px;">📊 Veritabanı Şeması (PostgreSQL)</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tablo</th>
+                            <th>Açıklama</th>
+                            <th>Önemli Kolonlar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Users</strong></td>
+                            <td>Sistem kullanıcıları</td>
+                            <td>UserId, Username, Email, PasswordHash, IsActive</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Roles</strong></td>
+                            <td>Kullanıcı rolleri</td>
+                            <td>RoleId, RoleName, Description, IsSystem</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Permissions</strong></td>
+                            <td>İzin tanımları</td>
+                            <td>PermissionId, Resource, Action, Description</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Keys</strong></td>
+                            <td>Şifrelenmiş anahtarlar</td>
+                            <td>KeyId, Name, EncryptedValue, CertificateId, Status</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Certificates</strong></td>
+                            <td>X.509 sertifikaları</td>
+                            <td>CertificateId, Thumbprint, Subject, NotAfter</td>
+                        </tr>
+                        <tr>
+                            <td><strong>AuditTrails</strong></td>
+                            <td>Genel audit kayıtları</td>
+                            <td>AuditId, UserId, Action, Resource, Timestamp</td>
+                        </tr>
+                        <tr>
+                            <td><strong>KeyAccessLogs</strong></td>
+                            <td>Anahtar erişim geçmişi</td>
+                            <td>AccessLogId, KeyId, AccessedBy, IPAddress</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="layer-section">
+                <h3>📡 4. Messaging & Observability Katmanı</h3>
+                <p>Asenkron mesajlaşma ve sistem izleme altyapısı.</p>
+                
+                <div class="component-grid">
+                    <div class="component-card">
+                        <h4>RabbitMQ</h4>
+                        <ul>
+                            <li><strong>Versiyon:</strong> RabbitMQ 3 Management</li>
+                            <li><strong>Kuyruklar:</strong></li>
+                            <li>- key_rotation_queue</li>
+                            <li>- certificate_expiry_queue</li>
+                            <li>- audit_event_queue</li>
+                            <li><strong>Pattern:</strong> Publisher-Subscriber</li>
+                            <li><strong>Features:</strong> Dead-letter queue, retry logic</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>ELK Stack</h4>
+                        <ul>
+                            <li><strong>Elasticsearch:</strong> Log indexing ve search</li>
+                            <li><strong>Logstash:</strong> Log aggregation pipeline</li>
+                            <li><strong>Kibana:</strong> Visualization dashboard</li>
+                            <li><strong>Use Cases:</strong> Security analysis, monitoring</li>
+                            <li><strong>Retention:</strong> 30 gün (configurable)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="layer-section">
+                <h3>🌐 5. Altyapı & Networking Katmanı</h3>
+                <p>Container orchestration, load balancing ve reverse proxy altyapısı.</p>
+                
+                <div class="component-grid">
+                    <div class="component-card">
+                        <h4>Nginx (Reverse Proxy)</h4>
+                        <ul>
+                            <li>TLS termination (HTTPS)</li>
+                            <li>Load balancing (round-robin)</li>
+                            <li>Rate limiting</li>
+                            <li>Static file serving</li>
+                            <li>Health check endpoints</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>Docker Compose</h4>
+                        <ul>
+                            <li>11 container servisi</li>
+                            <li>3 network (frontend, backend, monitoring)</li>
+                            <li>5 volume (persistent data)</li>
+                            <li>Health checks tüm servisler</li>
+                            <li>Dependency management</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="component-card">
+                        <h4>Kubernetes (Production)</h4>
+                        <ul>
+                            <li>Deployment manifests</li>
+                            <li>Services (LoadBalancer, ClusterIP)</li>
+                            <li>ConfigMaps ve Secrets</li>
+                            <li>Persistent Volumes</li>
+                            <li>Horizontal Pod Autoscaling</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="data-flow">
+            <h2>🔄 Veri Akış Senaryoları</h2>
+            
+            <div class="flow-section">
+                <h3>🔐 1. Kullanıcı Login İşlemi</h3>
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <strong>Adım 1:</strong> Kullanıcı portal üzerinden username ve password girer
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 2:</strong> Angular uygulaması POST /api/v1/auth/login isteği gönderir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 3:</strong> Nginx, isteği API instance'larından birine yönlendirir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 4:</strong> AuthController, AuthService.LoginAsync() çağırır
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 5:</strong> AuthService, PostgreSQL'den kullanıcıyı sorgular
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 6:</strong> Password hash doğrulanır (BCrypt)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 7:</strong> JWT access token (15dk) ve refresh token (7 gün) oluşturulur
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 8:</strong> Refresh token PostgreSQL UserSessions tablosuna kaydedilir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 9:</strong> LastLoginAt güncellenir, audit log MongoDB'ye yazılır
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 10:</strong> Token'lar kullanıcıya döndürülür ve portal'da localStorage'a kaydedilir
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flow-section">
+                <h3>🔑 2. Anahtar Oluşturma İşlemi</h3>
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <strong>Adım 1:</strong> Kullanıcı portal üzerinde "Create Key" formunu doldurur
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 2:</strong> POST /api/v1/keys isteği JWT token ile gönderilir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 3:</strong> JWT middleware token'ı doğrular ve kullanıcıyı belirler
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 4:</strong> Authorization middleware Key.Create iznini kontrol eder
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 5:</strong> KeysController, KeyService.CreateKeyAsync() çağırır
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 6:</strong> KeyService, seçilen sertifikayı PostgreSQL'den getirir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 7:</strong> EncryptionService, key value'yu AES-256-GCM ile şifreler
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 8:</strong> Şifrelenmiş key PostgreSQL Keys tablosuna INSERT edilir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 9:</strong> RabbitMQ üzerinde audit_event_queue'ya mesaj publish edilir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 10:</strong> AuditService, PostgreSQL AuditTrails ve MongoDB'ye log yazar
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 11:</strong> Key metadata (şifresiz) kullanıcıya response olarak döndürülür
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flow-section">
+                <h3>🔓 3. Anahtar Retrieve (Triple Authentication)</h3>
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <strong>Adım 1:</strong> Kullanıcı portal'da "Retrieve Key" butonuna tıklar
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 2:</strong> Portal, certificate ve password ister (Triple Auth)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 3:</strong> POST /api/v1/keys/{keyId}/retrieve isteği gönderilir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 4:</strong> JWT token doğrulanır (1. faktör)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 5:</strong> Certificate thumbprint kontrol edilir (2. faktör)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 6:</strong> User password tekrar doğrulanır (3. faktör)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 7:</strong> KeyService, encrypted key'i PostgreSQL'den getirir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 8:</strong> EncryptionService, private key ile deşifre eder
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 9:</strong> KeyAccessLogs tablosuna erişim kaydedilir (IP, UserAgent)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 10:</strong> AccessCount artırılır, LastAccessedAt güncellenir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 11:</strong> Audit log MongoDB ve ELK Stack'e gönderilir (Severity: Critical)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 12:</strong> Deşifre edilmiş key value kullanıcıya döndürülür
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 13:</strong> Portal, key'i güvenli şekilde gösterir (copy-to-clipboard)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flow-section">
+                <h3>🔄 4. Otomatik Key Rotation İşlemi</h3>
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <strong>Adım 1:</strong> Background worker, expiring keys'leri kontrol eder (daily cron)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 2:</strong> Expiring key listesi RabbitMQ key_rotation_queue'ya publish edilir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 3:</strong> KeyRotationConsumer, mesajı consume eder
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 4:</strong> KeyService.RotateKeyAsync() çağrılır
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 5:</strong> Yeni key value generate edilir (veya admin tarafından sağlanır)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 6:</strong> Yeni key aynı certificate ile şifrelenir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 7:</strong> Eski key Status='Archived' yapılır
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 8:</strong> Yeni key Version=2 ile INSERT edilir
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 9:</strong> Email/Notification service'e bildirim gönderilir (RabbitMQ)
+                    </div>
+                    <div class="flow-step">
+                        <strong>Adım 10:</strong> Tüm işlem audit log'a kaydedilir
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section>
+            <h2>🔒 Güvenlik Mimarisi</h2>
+            
+            <div class="success-box">
+                <h4>✅ Uygulanan Güvenlik Önlemleri</h4>
+                <ul>
+                    <li><strong>Network Segmentation:</strong> Frontend, Backend ve Data katmanları izole network'lerde</li>
+                    <li><strong>TLS Everywhere:</strong> Tüm external ve inter-service iletişim şifreli (TLS 1.3)</li>
+                    <li><strong>Zero-Trust Model:</strong> Her request JWT + permission kontrolünden geçer</li>
+                    <li><strong>Encryption at Rest:</strong> Keys, AES-256-GCM ile certificate-based şifrelenmiş</li>
+                    <li><strong>Encryption in Transit:</strong> HTTPS/TLS zorunlu (production)</li>
+                    <li><strong>Audit Everything:</strong> Her kritik işlem PostgreSQL + MongoDB + ELK'da loglanır</li>
+                    <li><strong>Triple Authentication:</strong> Hassas işlemler için Token + Cert + Password</li>
+                    <li><strong>Rate Limiting:</strong> Nginx level'da DDoS koruması</li>
+                    <li><strong>Soft Delete:</strong> Veriler fiziksel olarak silinmez, DeletedAt flag kullanılır</li>
+                    <li><strong>Password Policy:</strong> Complexity rules, BCrypt hashing</li>
+                    <li><strong>Account Lockout:</strong> Failed login attempts tracking</li>
+                    <li><strong>Token Expiry:</strong> Short-lived access tokens (15 min)</li>
+                </ul>
+            </div>
+            
+            <div class="warning-box">
+                <h4>⚠️ Dikkat Edilmesi Gereken Noktalar</h4>
+                <ul>
+                    <li>Production ortamında mutlaka TLS sertifikaları (Let's Encrypt/Commercial) kullanılmalı</li>
+                    <li>JWT SecretKey environment variable olarak saklanmalı (appsettings.json'da olmamalı)</li>
+                    <li>Database şifreleri güçlü ve rotate edilmeli</li>
+                    <li>Private key'ler asla repository'e commit edilmemeli</li>
+                    <li>Production'da Swagger disable edilmeli (veya IP whitelist)</li>
+                    <li>Regular security audit ve penetration test yapılmalı</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section>
+            <h2>📈 Ölçeklenebilirlik ve High Availability</h2>
+            
+            <div class="component-grid">
+                <div class="component-card">
+                    <h4>Horizontal Scaling</h4>
+                    <ul>
+                        <li><strong>API:</strong> Nginx arkasında N replica (default: 2)</li>
+                        <li><strong>Stateless Design:</strong> Session Redis'te, state-free API</li>
+                        <li><strong>Kubernetes:</strong> HPA ile otomatik scaling</li>
+                    </ul>
+                </div>
+                
+                <div class="component-card">
+                    <h4>Database Scaling</h4>
+                    <ul>
+                        <li><strong>PostgreSQL:</strong> Master-Slave replication</li>
+                        <li><strong>Redis:</strong> Clustering (Redis Sentinel/Cluster)</li>
+                        <li><strong>MongoDB:</strong> Replica Set (3+ nodes)</li>
+                    </ul>
+                </div>
+                
+                <div class="component-card">
+                    <h4>Load Balancing</h4>
+                    <ul>
+                        <li><strong>Nginx:</strong> Round-robin algorithm</li>
+                        <li><strong>Health Checks:</strong> /health endpoint monitoring</li>
+                        <li><strong>Cloud LB:</strong> AWS ALB, Azure Application Gateway</li>
+                    </ul>
+                </div>
+                
+                <div class="component-card">
+                    <h4>Async Processing</h4>
+                    <ul>
+                        <li><strong>RabbitMQ:</strong> Decoupled workload processing</li>
+                        <li><strong>Background Jobs:</strong> Key rotation, notifications</li>
+                        <li><strong>Dead Letter Queue:</strong> Failed message handling</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.1em; margin-bottom: 10px;">
+                <strong>Secure Box - Sistem Mimarisi Dokümantasyonu</strong>
+            </p>
+            <p>Versiyon: 1.0.0 MVP | Son Güncelleme: 2025-11-10</p>
+            <p style="margin-top: 15px;">
+                <a href="index.html" style="color: var(--accent-color); text-decoration: none;">← Ana Sayfaya Dön</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
+

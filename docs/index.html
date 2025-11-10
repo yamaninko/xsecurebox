@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Box - Proje Dokümantasyonu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --dark-bg: #0f172a;
+            --light-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--dark-bg);
+            color: white;
+            padding: 30px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 48px;
+        }
+        
+        .logo-text h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+        
+        .logo-text p {
+            color: var(--text-light);
+            font-size: 1.1em;
+        }
+        
+        .version-badge {
+            background: var(--success);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        nav {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        nav ul li {
+            margin: 0;
+        }
+        
+        nav ul li a {
+            display: block;
+            padding: 15px 30px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        nav ul li a:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        main {
+            background: white;
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .hero h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .hero p {
+            font-size: 1.3em;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .feature-card {
+            background: var(--light-bg);
+            padding: 30px;
+            border-radius: 12px;
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-icon {
+            font-size: 2em;
+        }
+        
+        .tech-stack {
+            margin: 40px 0;
+        }
+        
+        .tech-stack h2 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .tech-item {
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        
+        .tech-item:hover {
+            transform: scale(1.05);
+        }
+        
+        .tech-item h4 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        
+        .quick-links {
+            margin: 40px 0;
+            padding: 30px;
+            background: var(--light-bg);
+            border-radius: 12px;
+        }
+        
+        .quick-links h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .link-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text-dark);
+            border: 2px solid var(--primary-color);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .link-card:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .link-icon {
+            font-size: 2em;
+        }
+        
+        .status-section {
+            margin: 40px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .status-section h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        
+        .status-items {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        
+        .status-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .status-item h3 {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        
+        footer {
+            background: var(--dark-bg);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border-left: 5px solid var(--warning);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p {
+            color: #856404;
+            margin: 5px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .logo {
+                flex-direction: column;
+            }
+            
+            .hero h2 {
+                font-size: 2em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+            }
+            
+            nav ul li a {
+                border-bottom: 1px solid #eee;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🔐</div>
+                    <div class="logo-text">
+                        <h1>Secure Box</h1>
+                        <p>Yüksek Güvenlikli Anahtar Yönetim Sistemi</p>
+                    </div>
+                </div>
+                <div class="version-badge">v1.0.0 MVP</div>
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="#overview">📋 Genel Bakış</a></li>
+                <li><a href="architecture.html">🏗️ Mimari</a></li>
+                <li><a href="technical-documentation.html">📚 Teknik Döküman</a></li>
+                <li><a href="#features">✨ Özellikler</a></li>
+                <li><a href="#tech-stack">⚙️ Teknolojiler</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <div class="hero">
+            <h2>Kritik Verilerinizi Güvenle Yönetin</h2>
+            <p>
+                Secure Box, API anahtarları, şifreler, sertifikalar ve hassas bilgilerin 
+                şifrelenmiş olarak saklanmasını ve yönetilmesini sağlayan, kurumsal düzeyde 
+                bir güvenlik çözümüdür. Sertifika tabanlı şifreleme, çok faktörlü kimlik 
+                doğrulama ve kapsamlı denetim kayıtları ile en yüksek güvenlik standartlarını sunar.
+            </p>
+        </div>
+        
+        <div class="info-box">
+            <h3>🔑 Varsayılan Giriş Bilgileri</h3>
+            <p><strong>Kullanıcı Adı:</strong> admin</p>
+            <p><strong>Şifre:</strong> Admin@123</p>
+            <p><strong>Portal URL:</strong> http://localhost</p>
+            <p><strong>API URL:</strong> http://localhost/api</p>
+        </div>
+        
+        <section id="overview">
+            <h2 style="color: var(--primary-color); font-size: 2.5em; margin: 40px 0 20px 0; text-align: center;">📋 Proje Hakkında</h2>
+            <p style="font-size: 1.2em; line-height: 1.8; text-align: center; max-width: 900px; margin: 0 auto 40px;">
+                Secure Box, modern microservices mimarisine dayanan, ölçeklenebilir ve yüksek erişilebilirlik 
+                özelliklerine sahip bir güvenlik platformudur. Docker ve Kubernetes ile konteynerize edilmiş, 
+                load balancing ve monitoring çözümleri ile production-ready bir sistemdir.
+            </p>
+        </section>
+        
+        <section id="features">
+            <h2 style="color: var(--primary-color); font-size: 2.5em; margin: 40px 0 30px 0; text-align: center;">✨ Temel Özellikler</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3><span class="feature-icon">🔐</span> Sertifika Tabanlı Şifreleme</h3>
+                    <p>X.509 sertifikaları kullanarak AES-256-GCM ve RSA ile çok katmanlı şifreleme. Tüm hassas veriler şifrelenmiş olarak saklanır.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">🎫</span> JWT Authentication</h3>
+                    <p>Modern ve güvenli JWT tabanlı kimlik doğrulama. Access token (15 dk) ve refresh token (7 gün) ile oturum yönetimi.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">👥</span> Rol Bazlı Erişim Kontrolü</h3>
+                    <p>Admin, Client ve Service rollerinin yanı sıra özelleştirilebilir roller ve detaylı izin yönetimi (RBAC).</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">📝</span> Kapsamlı Audit Logging</h3>
+                    <p>Her işlem kayıt altına alınır. PostgreSQL ve MongoDB üzerinde immutable audit trail. ELK Stack ile log analizi.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">🔄</span> Anahtar Rotasyonu</h3>
+                    <p>Otomatik ve manuel key rotation desteği. Version kontrolü ile eski anahtarlara erişim ve geçmişi izleme.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">📜</span> Sertifika Yaşam Döngüsü</h3>
+                    <p>Sertifika yükleme, geçerlilik kontrolü, süre dolumu bildirimleri ve iptal (revocation) yönetimi.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">🌐</span> Modern Web Portal</h3>
+                    <p>Angular ile geliştirilmiş, responsive ve kullanıcı dostu admin paneli. Material Design bileşenleri.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">🚀</span> High Availability</h3>
+                    <p>2+ API replica ile load balancing. Nginx reverse proxy, Redis cache ve RabbitMQ ile ölçeklenebilir altyapı.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3><span class="feature-icon">📊</span> Monitoring & Analytics</h3>
+                    <p>ELK Stack (Elasticsearch, Logstash, Kibana) ile gerçek zamanlı log izleme ve analiz. Performans metrikleri.</p>
+                </div>
+            </div>
+        </section>
+        
+        <div class="status-section">
+            <h2>🎯 Proje Durumu</h2>
+            <div class="status-items">
+                <div class="status-item">
+                    <h3>✅</h3>
+                    <p>MVP Tamamlandı</p>
+                </div>
+                <div class="status-item">
+                    <h3>11</h3>
+                    <p>Container Servisi</p>
+                </div>
+                <div class="status-item">
+                    <h3>100%</h3>
+                    <p>Test Coverage Hedefi</p>
+                </div>
+                <div class="status-item">
+                    <h3>24/7</h3>
+                    <p>Monitoring</p>
+                </div>
+            </div>
+        </div>
+        
+        <section id="tech-stack" class="tech-stack">
+            <h2>⚙️ Teknoloji Stack</h2>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <h4>Backend</h4>
+                    <p>ASP.NET Core 9</p>
+                    <p>Entity Framework Core</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Frontend</h4>
+                    <p>Angular 18+</p>
+                    <p>Angular Material</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Databases</h4>
+                    <p>PostgreSQL 16</p>
+                    <p>MongoDB 7</p>
+                    <p>Redis 7</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Message Queue</h4>
+                    <p>RabbitMQ 3</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Monitoring</h4>
+                    <p>ELK Stack 8.11</p>
+                    <p>Kibana Dashboard</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Infrastructure</h4>
+                    <p>Docker Compose</p>
+                    <p>Kubernetes</p>
+                    <p>Nginx</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Security</h4>
+                    <p>JWT Authentication</p>
+                    <p>X.509 Certificates</p>
+                    <p>AES-256-GCM</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Logging</h4>
+                    <p>Serilog</p>
+                    <p>Structured Logging</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="quick-links">
+            <h2>📌 Hızlı Bağlantılar</h2>
+            <div class="links-grid">
+                <a href="architecture.html" class="link-card">
+                    <span class="link-icon">🏗️</span>
+                    <div>
+                        <strong>Sistem Mimarisi</strong>
+                        <p>Component diagram ve veri akışı</p>
+                    </div>
+                </a>
+                <a href="technical-documentation.html" class="link-card">
+                    <span class="link-icon">📚</span>
+                    <div>
+                        <strong>Teknik Dokümantasyon</strong>
+                        <p>API, Database, Security detayları</p>
+                    </div>
+                </a>
+                <a href="01-component-diagram.md" class="link-card">
+                    <span class="link-icon">📊</span>
+                    <div>
+                        <strong>Component Diagram</strong>
+                        <p>Detaylı komponent yapısı</p>
+                    </div>
+                </a>
+                <a href="02-database-schema.md" class="link-card">
+                    <span class="link-icon">🗄️</span>
+                    <div>
+                        <strong>Database Schema</strong>
+                        <p>Veritabanı şeması ve ilişkiler</p>
+                    </div>
+                </a>
+                <a href="03-api-endpoints.md" class="link-card">
+                    <span class="link-icon">🌐</span>
+                    <div>
+                        <strong>API Endpoints</strong>
+                        <p>REST API referansı</p>
+                    </div>
+                </a>
+                <a href="08-security-checklist.md" class="link-card">
+                    <span class="link-icon">🔒</span>
+                    <div>
+                        <strong>Güvenlik Kontrol Listesi</strong>
+                        <p>Security best practices</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <section style="margin-top: 50px; padding: 30px; background: var(--light-bg); border-radius: 12px;">
+            <h2 style="color: var(--primary-color); margin-bottom: 20px;">🚀 Hızlı Başlangıç</h2>
+            <pre style="background: var(--dark-bg); color: #10b981; padding: 20px; border-radius: 8px; overflow-x: auto;">
+# Projeyi klonlayın
+cd /Users/gtmac29/projects/secure-box
+
+# Docker-Compose ile tüm servisleri başlatın
+docker-compose up -d
+
+# Servis durumlarını kontrol edin
+docker-compose ps
+
+# Logları izleyin
+docker-compose logs -f
+
+# Servisleri durdurun
+docker-compose down
+            </pre>
+            
+            <h3 style="color: var(--primary-color); margin: 30px 0 15px 0;">Erişim Noktaları</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li style="padding: 10px; margin: 5px 0; background: white; border-radius: 5px;">
+                    🌐 <strong>Portal:</strong> <a href="http://localhost" style="color: var(--primary-color);">http://localhost</a>
+                </li>
+                <li style="padding: 10px; margin: 5px 0; background: white; border-radius: 5px;">
+                    🔌 <strong>API:</strong> <a href="http://localhost/api" style="color: var(--primary-color);">http://localhost/api</a>
+                </li>
+                <li style="padding: 10px; margin: 5px 0; background: white; border-radius: 5px;">
+                    📖 <strong>Swagger:</strong> <a href="http://localhost/api/swagger" style="color: var(--primary-color);">http://localhost/api/swagger</a>
+                </li>
+                <li style="padding: 10px; margin: 5px 0; background: white; border-radius: 5px;">
+                    📊 <strong>Kibana:</strong> <a href="http://localhost:5601" style="color: var(--primary-color);">http://localhost:5601</a>
+                </li>
+                <li style="padding: 10px; margin: 5px 0; background: white; border-radius: 5px;">
+                    🐰 <strong>RabbitMQ Management:</strong> <a href="http://localhost:15672" style="color: var(--primary-color);">http://localhost:15672</a>
+                </li>
+            </ul>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.1em; margin-bottom: 10px;">
+                <strong>Secure Box - Yüksek Güvenlikli Anahtar Yönetim Sistemi</strong>
+            </p>
+            <p>Versiyon: 1.0.0 MVP | Son Güncelleme: 2025-11-10</p>
+            <p style="margin-top: 15px; color: var(--text-light);">
+                Tüm hakları saklıdır © 2025
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
+
