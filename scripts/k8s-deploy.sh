@@ -134,8 +134,11 @@ sleep 20
 
 # Step 9 - Deploy NGINX
 echo "Step 9/10 - Deploying NGINX Gateway..."
+echo "  Creating/Updating NGINX ConfigMap..."
+curl -k -H "$AUTH_HEADER" -X PUT "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/configmaps/nginx-config" \
+  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/nginx-configmap.yaml 2>/dev/null || \
 curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/configmaps" \
-  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/nginx-configmap.yaml 2>/dev/null || echo "NGINX ConfigMap exists"
+  -H "Content-Type:application/yaml" --data-binary @kubernetes/base/nginx-configmap.yaml 2>/dev/null
 
 csplit -s -f /tmp/nginx- kubernetes/base/nginx-deployment.yaml '/^---$/' '{*}' 2>/dev/null || cp kubernetes/base/nginx-deployment.yaml /tmp/nginx-00
 
