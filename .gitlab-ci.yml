@@ -225,42 +225,116 @@ deploy_dev:
     url: http://dev.securebox.local:30222
     on_stop: cleanup_dev
   script:
-    - echo "Deploying to Development Environment"
-    - echo "Configuring kubectl with credentials..."
+    - echo "=========================================="
+    - echo "🚀 AUTONOMOUS KUBERNETES DEPLOYMENT"
+    - echo "=========================================="
+    - echo ""
+    
+    # 1. KUBECTL CONFIGURATION
+    - echo "📋 Step 1/10: Configuring kubectl..."
     - kubectl config set-cluster kubernetes --server="$KUBE_URL" --insecure-skip-tls-verify=true
     - kubectl config set-credentials admin --username="$KUBE_USER" --password="$KUBE_PASS"
-    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin --namespace=securebox
+    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin --namespace=$KUBE_NAMESPACE
     - kubectl config use-context kubernetes
     - kubectl version --client
     - kubectl cluster-info
+    - echo "✅ Kubectl configured successfully"
+    - echo ""
+    
+    # 2. NAMESPACE CREATION
+    - echo "📋 Step 2/10: Creating namespace 'securebox'..."
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl get namespace $KUBE_NAMESPACE
+    - echo "✅ Namespace ready"
+    - echo ""
+    
+    # 3. DOCKER REGISTRY SECRET
+    - echo "📋 Step 3/10: Creating Harbor registry secret..."
     - kubectl create secret docker-registry harbor-registry-secret --docker-server=$GTECH_REPO_URL --docker-username=$GTECH_REPO_USERNAME --docker-password=$GTECH_REPO_TOKEN --namespace=$KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+    - echo "✅ Registry secret created"
+    - echo ""
+    
+    # 4. IMAGE TAG REPLACEMENT
+    - echo "📋 Step 4/10: Updating image tags to $CI_COMMIT_SHORT_SHA..."
     - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
     - sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml
+    - echo "✅ Image tags updated"
+    - echo ""
+    
+    # 5. CONFIGMAPS AND SECRETS
+    - echo "📋 Step 5/10: Deploying ConfigMaps and Secrets..."
     - kubectl apply -f kubernetes/base/configmap.yaml
     - kubectl apply -f kubernetes/base/secrets.yaml
+    - echo "✅ ConfigMaps and Secrets deployed"
+    - echo ""
+    
+    # 6. DATABASE AND MESSAGING SERVICES
+    - echo "📋 Step 6/10: Deploying infrastructure services..."
+    - echo "  - PostgreSQL"
     - kubectl apply -f kubernetes/base/postgres-deployment.yaml
+    - echo "  - MongoDB"
     - kubectl apply -f kubernetes/base/mongodb-deployment.yaml
+    - echo "  - Redis"
     - kubectl apply -f kubernetes/base/redis-deployment.yaml
+    - echo "  - RabbitMQ"
     - kubectl apply -f kubernetes/base/rabbitmq-deployment.yaml
-    - kubectl wait --for=condition=ready pod -l app=postgres -n $KUBE_NAMESPACE --timeout=300s || true
-    - kubectl wait --for=condition=ready pod -l app=mongodb -n $KUBE_NAMESPACE --timeout=300s || true
-    - kubectl wait --for=condition=ready pod -l app=redis -n $KUBE_NAMESPACE --timeout=300s || true
-    - kubectl wait --for=condition=ready pod -l app=rabbitmq -n $KUBE_NAMESPACE --timeout=300s || true
+    - echo "⏳ Waiting for infrastructure services to be ready..."
+    - kubectl wait --for=condition=ready pod -l app=postgres -n $KUBE_NAMESPACE --timeout=300s || echo "⚠️  PostgreSQL startup pending"
+    - kubectl wait --for=condition=ready pod -l app=mongodb -n $KUBE_NAMESPACE --timeout=300s || echo "⚠️  MongoDB startup pending"
+    - kubectl wait --for=condition=ready pod -l app=redis -n $KUBE_NAMESPACE --timeout=300s || echo "⚠️  Redis startup pending"
+    - kubectl wait --for=condition=ready pod -l app=rabbitmq -n $KUBE_NAMESPACE --timeout=300s || echo "⚠️  RabbitMQ startup pending"
+    - sleep 10
+    - echo "✅ Infrastructure services deployed"
+    - echo ""
+    
+    # 7. API DEPLOYMENT
+    - echo "📋 Step 7/10: Deploying SecureBox API..."
     - kubectl apply -f kubernetes/base/api-deployment.yaml
+    - echo "⏳ Waiting for API to be ready..."
+    - kubectl rollout status deployment/securebox-api -n $KUBE_NAMESPACE --timeout=300s
+    - echo "✅ API deployed and running"
+    - echo ""
+    
+    # 8. PORTAL DEPLOYMENT
+    - echo "📋 Step 8/10: Deploying SecureBox Portal..."
     - kubectl apply -f kubernetes/base/portal-deployment.yaml
+    - echo "⏳ Waiting for Portal to be ready..."
+    - kubectl rollout status deployment/securebox-portal -n $KUBE_NAMESPACE --timeout=300s
+    - echo "✅ Portal deployed and running"
+    - echo ""
+    
+    # 9. NGINX GATEWAY
+    - echo "📋 Step 9/10: Deploying NGINX Gateway..."
     - kubectl apply -f kubernetes/base/nginx-configmap.yaml
     - kubectl apply -f kubernetes/base/nginx-deployment.yaml
-    - kubectl rollout status deployment/securebox-api -n $KUBE_NAMESPACE --timeout=300s
-    - kubectl rollout status deployment/securebox-portal -n $KUBE_NAMESPACE --timeout=300s
+    - echo "⏳ Waiting for NGINX to be ready..."
     - kubectl rollout status deployment/nginx -n $KUBE_NAMESPACE --timeout=300s
-    - echo "Status Deployment Status:"
+    - echo "✅ NGINX Gateway deployed and running"
+    - echo ""
+    
+    # 10. FINAL STATUS CHECK
+    - echo "📋 Step 10/10: Final deployment status..."
+    - echo ""
+    - echo "📊 DEPLOYMENTS:"
     - kubectl get deployments -n $KUBE_NAMESPACE
-    - kubectl get pods -n $KUBE_NAMESPACE
+    - echo ""
+    - echo "📦 PODS:"
+    - kubectl get pods -n $KUBE_NAMESPACE -o wide
+    - echo ""
+    - echo "🌐 SERVICES:"
     - kubectl get services -n $KUBE_NAMESPACE
-    - echo "Deployment to DEV completed successfully!"
+    - echo ""
+    - echo "🔌 EXTERNAL ACCESS:"
+    - |
+      NODE_PORT=$(kubectl get service nginx-service -n $KUBE_NAMESPACE -o jsonpath='{.spec.ports[0].nodePort}')
+      echo "  NodePort: $NODE_PORT"
+      echo "  Access URL: http://<node-ip>:$NODE_PORT"
+    - echo ""
+    - echo "=========================================="
+    - echo "✅ DEPLOYMENT COMPLETED SUCCESSFULLY!"
+    - echo "=========================================="
   only:
     - development
     - schedules
