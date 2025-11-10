@@ -213,13 +213,15 @@ deploy_dev:
   image: bitnami/kubectl:latest
   environment:
     name: development
-    url: http://dev.securebox.local
+    url: http://dev.securebox.local:30222
     on_stop: cleanup_dev
   script:
     - echo "Deploying to Development Environment"
-    - mkdir -p ~/.kube
-    - echo "$KUBECONFIG_DEV" | base64 -d > ~/.kube/config
-    - chmod 600 ~/.kube/config
+    - echo "Configuring kubectl with credentials..."
+    - kubectl config set-cluster kubernetes --server="$KUBE_URL" --insecure-skip-tls-verify=true
+    - kubectl config set-credentials admin --username="$KUBE_USER" --password="$KUBE_PASS"
+    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin --namespace=securebox
+    - kubectl config use-context kubernetes
     - kubectl version --client
     - kubectl cluster-info
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
@@ -264,13 +266,15 @@ deploy_production:
   image: bitnami/kubectl:latest
   environment:
     name: production
-    url: https://securebox.example.com
+    url: http://securebox.example.com:30222
     on_stop: cleanup_production
   script:
     - echo "Deploying to Production Environment"
-    - mkdir -p ~/.kube
-    - echo "$KUBECONFIG_PROD" | base64 -d > ~/.kube/config
-    - chmod 600 ~/.kube/config
+    - echo "Configuring kubectl with credentials..."
+    - kubectl config set-cluster kubernetes --server="$KUBE_URL" --insecure-skip-tls-verify=true
+    - kubectl config set-credentials admin --username="$KUBE_USER" --password="$KUBE_PASS"
+    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin --namespace=securebox
+    - kubectl config use-context kubernetes
     - kubectl version --client
     - kubectl cluster-info
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
@@ -321,8 +325,11 @@ cleanup_dev:
     action: stop
   script:
     - echo "Cleaning up Development Environment"
-    - mkdir -p ~/.kube
-    - echo "$KUBECONFIG_DEV" | base64 -d > ~/.kube/config
+    - echo "Configuring kubectl with credentials..."
+    - kubectl config set-cluster kubernetes --server="$KUBE_URL" --insecure-skip-tls-verify=true
+    - kubectl config set-credentials admin --username="$KUBE_USER" --password="$KUBE_PASS"
+    - kubectl config set-context kubernetes --cluster=kubernetes --user=admin --namespace=securebox
+    - kubectl config use-context kubernetes
     - kubectl delete namespace $KUBE_NAMESPACE --ignore-not-found=true
     - echo "Development environment cleaned up"
   when: manual
