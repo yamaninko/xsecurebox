@@ -148,14 +148,19 @@ push_api:
   script:
     - echo "Pushing API Image to Harbor"
     - echo "Checking for artifact..."
-    - ls -lh api-image.tar.gz || (echo "ERROR: api-image.tar.gz not found!" && exit 1)
+    - test -f api-image.tar.gz && echo "Artifact found" || exit 1
     - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - echo "Loading Docker image from artifact..."
     - docker load < api-image.tar.gz
     - docker push $API_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $API_IMAGE:$CI_COMMIT_REF_SLUG
-    - if [ "$CI_COMMIT_REF_NAME" == "main" ]; then docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest; docker push $API_IMAGE:latest; echo "Pushed as latest tag"; fi
+    - |
+      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
+        docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest
+        docker push $API_IMAGE:latest
+        echo "Pushed as latest tag"
+      fi
     - echo "API Image pushed successfully"
     - echo "Image - $API_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
@@ -176,14 +181,19 @@ push_portal:
   script:
     - echo "Pushing Portal Image to Harbor"
     - echo "Checking for artifact..."
-    - ls -lh portal-image.tar.gz || (echo "ERROR: portal-image.tar.gz not found!" && exit 1)
+    - test -f portal-image.tar.gz && echo "Artifact found" || exit 1
     - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - echo "Loading Docker image from artifact..."
     - docker load < portal-image.tar.gz
     - docker push $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG
-    - if [ "$CI_COMMIT_REF_NAME" == "main" ]; then docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest; docker push $PORTAL_IMAGE:latest; echo "Pushed as latest tag"; fi
+    - |
+      if [ "$CI_COMMIT_REF_NAME" == "main" ]; then
+        docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest
+        docker push $PORTAL_IMAGE:latest
+        echo "Pushed as latest tag"
+      fi
     - echo "Portal Image pushed successfully"
     - echo "Image - $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
   only:
