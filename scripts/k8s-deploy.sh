@@ -38,12 +38,28 @@ sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
 sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
 sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml
 
-# Step 5 - Deploy ConfigMaps and Secrets
-echo "Step 5/10 - Deploying ConfigMaps and Secrets..."
+# Step 5 - Deploy ConfigMaps, Secrets and Persistent Volumes
+echo "Step 5/10 - Deploying ConfigMaps, Secrets and Persistent Volumes..."
 curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/configmaps" \
   -H "Content-Type:application/yaml" --data-binary @kubernetes/base/configmap.yaml || echo "ConfigMap exists"
 curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/secrets" \
   -H "Content-Type:application/yaml" --data-binary @kubernetes/base/secrets.yaml || echo "Secret exists"
+
+echo "  Creating Persistent Volumes and Claims..."
+csplit -s -f /tmp/pv- kubernetes/base/persistent-volumes.yaml '/^---$/' '{*}' 2>/dev/null || cp kubernetes/base/persistent-volumes.yaml /tmp/pv-00
+
+for yaml_part in /tmp/pv-*; do
+  if [ -s "$yaml_part" ]; then
+    if grep -q "kind: PersistentVolume" "$yaml_part" && ! grep -q "kind: PersistentVolumeClaim" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/persistentvolumes" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "PV exists"
+    elif grep -q "kind: PersistentVolumeClaim" "$yaml_part"; then
+      curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/persistentvolumeclaims" \
+        -H "Content-Type:application/yaml" --data-binary @"$yaml_part" 2>/dev/null || echo "PVC exists"
+    fi
+  fi
+done
+rm -f /tmp/pv-*
 
 # Step 6 - Deploy Infrastructure
 echo "Step 6/10 - Deploying infrastructure services..."
