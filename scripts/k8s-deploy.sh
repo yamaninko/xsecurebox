@@ -32,8 +32,7 @@ curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/s
   -d "{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"type\":\"kubernetes.io/dockerconfigjson\",\"metadata\":{\"name\":\"harbor-registry-secret\"},\"data\":{\".dockerconfigjson\":\"$DOCKER_CONFIG\"}}" || echo "Secret exists"
 
 # Step 4 - Update Image Tags
-echo "Step 4/10 - Updating image tags..."
-export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
+echo "Step 4/10 - Updating image tags to ${IMAGE_TAG}..."
 sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
 sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
 sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml

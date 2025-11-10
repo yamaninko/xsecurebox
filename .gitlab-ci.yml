@@ -12,6 +12,7 @@ variables:
   API_IMAGE: "${GTECH_REPO_URL}/securebox/api"
   PORTAL_IMAGE: "${GTECH_REPO_URL}/securebox/portal"
   KUBE_NAMESPACE: "securebox"
+  IMAGE_TAG: "build-${CI_PIPELINE_IID}-${CI_COMMIT_SHORT_SHA}"
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -25,7 +26,7 @@ cache:
 build_api:
   stage: build
   script:
-    - echo "Building API Docker Image"
+    - echo "Building API Docker Image with tag ${IMAGE_TAG}"
     - echo "Checking Docker availability..."
     - docker --version || (echo "Docker not available" && exit 1)
     - docker info || (echo "Docker daemon not accessible" && exit 1)
@@ -33,12 +34,12 @@ build_api:
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/backend/SecureBox.API
     - echo "Building Docker image..."
-    - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$CI_COMMIT_REF_NAME --cache-from $API_IMAGE:latest --tag $API_IMAGE:$CI_COMMIT_SHORT_SHA --tag $API_IMAGE:$CI_COMMIT_REF_SLUG --file Dockerfile ..
+    - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$IMAGE_TAG --cache-from $API_IMAGE:latest --tag $API_IMAGE:$IMAGE_TAG --tag $API_IMAGE:latest --file Dockerfile ..
     - cd ../../..
     - echo "Saving Docker image to artifact..."
-    - docker save $API_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > api-image.tar.gz
+    - docker save $API_IMAGE:$IMAGE_TAG | gzip > api-image.tar.gz
     - ls -lh api-image.tar.gz
-    - echo "API image artifact created successfully"
+    - echo "API image artifact created successfully with tag ${IMAGE_TAG}"
   artifacts:
     name: "api-image-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -56,7 +57,7 @@ build_api:
 build_portal:
   stage: build
   script:
-    - echo "Building Portal Docker Image"
+    - echo "Building Portal Docker Image with tag ${IMAGE_TAG}"
     - echo "Checking Docker availability..."
     - docker --version || (echo "Docker not available" && exit 1)
     - docker info || (echo "Docker daemon not accessible" && exit 1)
@@ -64,12 +65,12 @@ build_portal:
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - cd src/frontend
     - echo "Building Docker image..."
-    - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$CI_COMMIT_REF_NAME --cache-from $PORTAL_IMAGE:latest --tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA --tag $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG --file Dockerfile .
+    - docker build --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg VCS_REF=$CI_COMMIT_SHORT_SHA --build-arg VERSION=$IMAGE_TAG --cache-from $PORTAL_IMAGE:latest --tag $PORTAL_IMAGE:$IMAGE_TAG --tag $PORTAL_IMAGE:latest --file Dockerfile .
     - cd ../..
     - echo "Saving Docker image to artifact..."
-    - docker save $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA | gzip > portal-image.tar.gz
+    - docker save $PORTAL_IMAGE:$IMAGE_TAG | gzip > portal-image.tar.gz
     - ls -lh portal-image.tar.gz
-    - echo "Portal image artifact created successfully"
+    - echo "Portal image artifact created successfully with tag ${IMAGE_TAG}"
   artifacts:
     name: "portal-image-$CI_COMMIT_SHORT_SHA"
     paths:
@@ -151,19 +152,17 @@ push_api:
       artifacts: true
     - job: test_api
   script:
-    - echo "Pushing API Image to Harbor"
+    - echo "Pushing API Image to Harbor with tag ${IMAGE_TAG}"
     - echo "Checking for artifact..."
     - test -f api-image.tar.gz && echo "Artifact found" || exit 1
     - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - echo "Loading Docker image from artifact..."
     - docker load < api-image.tar.gz
-    - docker push $API_IMAGE:$CI_COMMIT_SHORT_SHA
-    - docker push $API_IMAGE:$CI_COMMIT_REF_SLUG
-    - docker tag $API_IMAGE:$CI_COMMIT_SHORT_SHA $API_IMAGE:latest
+    - docker push $API_IMAGE:$IMAGE_TAG
     - docker push $API_IMAGE:latest
     - echo "API Image pushed successfully"
-    - echo "Image - $API_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - echo "Image - $API_IMAGE:$IMAGE_TAG"
   only:
     - development
     - schedules
@@ -181,19 +180,17 @@ push_portal:
       artifacts: true
     - job: test_portal
   script:
-    - echo "Pushing Portal Image to Harbor"
+    - echo "Pushing Portal Image to Harbor with tag ${IMAGE_TAG}"
     - echo "Checking for artifact..."
     - test -f portal-image.tar.gz && echo "Artifact found" || exit 1
     - echo "Logging into Harbor registry..."
     - echo "$GTECH_REPO_TOKEN" | docker login -u "$GTECH_REPO_USERNAME" --password-stdin "$GTECH_REPO_URL"
     - echo "Loading Docker image from artifact..."
     - docker load < portal-image.tar.gz
-    - docker push $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA
-    - docker push $PORTAL_IMAGE:$CI_COMMIT_REF_SLUG
-    - docker tag $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA $PORTAL_IMAGE:latest
+    - docker push $PORTAL_IMAGE:$IMAGE_TAG
     - docker push $PORTAL_IMAGE:latest
     - echo "Portal Image pushed successfully"
-    - echo "Image - $PORTAL_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - echo "Image - $PORTAL_IMAGE:$IMAGE_TAG"
   only:
     - development
     - schedules
@@ -217,6 +214,8 @@ deploy_dev:
     on_stop: cleanup_dev
   script:
     - export KUBE_API="$KUBE_URL"
+    - export IMAGE_TAG="${IMAGE_TAG}"
+    - echo "Deploying with image tag ${IMAGE_TAG}"
     - chmod +x scripts/k8s-deploy.sh
     - bash scripts/k8s-deploy.sh
   only:
@@ -245,7 +244,7 @@ deploy_production:
     - kubectl cluster-info
     - kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
     - kubectl create secret docker-registry harbor-registry-secret --docker-server=$GTECH_REPO_URL --docker-username=$GTECH_REPO_USERNAME --docker-password=$GTECH_REPO_TOKEN --namespace=$KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-    - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
+    - echo "Deploying with image tag ${IMAGE_TAG}"
     - sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
     - sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml
