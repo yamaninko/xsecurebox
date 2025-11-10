@@ -91,6 +91,8 @@ build_portal:
 test_api:
   stage: test
   image: mcr.microsoft.com/dotnet/sdk:9.0
+  needs:
+    - build_api
   script:
     - echo "Running API Tests"
     - cd src/backend
@@ -114,6 +116,8 @@ test_api:
 test_portal:
   stage: test
   image: node:20-alpine
+  needs:
+    - build_portal
   script:
     - echo "Running Portal Tests"
     - cd src/frontend
@@ -145,6 +149,7 @@ push_api:
   needs:
     - job: build_api
       artifacts: true
+    - job: test_api
   script:
     - echo "Pushing API Image to Harbor"
     - echo "Checking for artifact..."
@@ -178,6 +183,7 @@ push_portal:
   needs:
     - job: build_portal
       artifacts: true
+    - job: test_portal
   script:
     - echo "Pushing Portal Image to Harbor"
     - echo "Checking for artifact..."
@@ -211,6 +217,9 @@ push_portal:
 deploy_dev:
   stage: deploy
   image: bitnami/kubectl:latest
+  needs:
+    - push_api
+    - push_portal
   environment:
     name: development
     url: http://dev.securebox.local:30222
@@ -255,7 +264,6 @@ deploy_dev:
   only:
     - development
     - schedules
-  when: manual
   retry:
     max: 1
     when:
@@ -351,6 +359,11 @@ cleanup_production:
 
 cleanup_docker:
   stage: cleanup
+  needs:
+    - job: deploy_dev
+      optional: true
+    - job: deploy_production
+      optional: true
   script:
     - echo "Cleaning up Docker resources"
     - docker system prune -af --volumes
