@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Box - CI/CD Pipeline Dokümantasyonu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #3b82f6;
+            --dark-bg: #0f172a;
+            --light-bg: #f8fafc;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gitlab: #fc6d26;
+            --github: #24292f;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: var(--dark-bg);
+            color: white;
+            padding: 30px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 48px;
+        }
+        
+        .logo-text h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+        
+        .logo-text p {
+            color: var(--text-light);
+            font-size: 1.1em;
+        }
+        
+        nav {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        nav ul li a {
+            display: block;
+            padding: 15px 30px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        nav ul li a:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        main {
+            background: white;
+            margin: 30px 0;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+        
+        h3 {
+            color: var(--secondary-color);
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+        }
+        
+        h4 {
+            color: var(--text-dark);
+            font-size: 1.3em;
+            margin: 20px 0 10px 0;
+        }
+        
+        .pipeline-flow {
+            background: var(--dark-bg);
+            color: #10b981;
+            padding: 30px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+        
+        .platform-tabs {
+            display: flex;
+            gap: 20px;
+            margin: 30px 0;
+            border-bottom: 3px solid #e5e7eb;
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            background: var(--light-bg);
+            border: 2px solid #e5e7eb;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tab:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .tab.active {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(2px);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+            background: var(--light-bg);
+            border-radius: 0 8px 8px 8px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .gitlab-badge {
+            background: var(--gitlab);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .github-badge {
+            background: var(--github);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .stage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stage-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stage-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .stage-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stage-icon {
+            font-size: 1.5em;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .comparison-table tr:hover {
+            background: var(--light-bg);
+        }
+        
+        .code-block {
+            background: var(--dark-bg);
+            color: #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .info-box {
+            background: #dbeafe;
+            border-left: 5px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info-box h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border-left: 5px solid var(--warning);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .warning-box h4 {
+            color: var(--warning);
+            margin-bottom: 10px;
+        }
+        
+        .success-box {
+            background: #d1fae5;
+            border-left: 5px solid var(--success);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .success-box h4 {
+            color: var(--success);
+            margin-bottom: 10px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-list li:before {
+            content: "✅";
+            font-size: 1.2em;
+        }
+        
+        .steps-container {
+            background: var(--light-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 5px;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .best-practices {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        
+        .best-practices h3 {
+            color: white;
+            border-bottom: 2px solid white;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .best-practices ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .best-practices li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .best-practices li:before {
+            content: "🎯";
+            font-size: 1.2em;
+        }
+        
+        footer {
+            background: var(--dark-bg);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .logo {
+                flex-direction: column;
+            }
+            
+            nav ul {
+                flex-direction: column;
+            }
+            
+            nav ul li a {
+                border-bottom: 1px solid #eee;
+            }
+            
+            .platform-tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-radius: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🚀</div>
+                    <div class="logo-text">
+                        <h1>CI/CD Pipeline</h1>
+                        <p>Secure Box Sürekli Entegrasyon ve Dağıtım</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">🏠 Ana Sayfa</a></li>
+                <li><a href="#overview">📋 Genel Bakış</a></li>
+                <li><a href="#platforms">🔧 Platformlar</a></li>
+                <li><a href="#kubernetes">☸️ Kubernetes</a></li>
+                <li><a href="#best-practices">💡 Best Practices</a></li>
+                <li><a href="architecture.html">🏗️ Mimari</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <section id="overview">
+            <h2>📋 CI/CD Genel Bakış</h2>
+            
+            <p style="font-size: 1.2em; line-height: 1.8; margin: 20px 0;">
+                Secure Box projesi, modern DevOps pratiklerine uygun olarak <strong>GitLab CI/CD</strong> ve 
+                <strong>GitHub Actions</strong> olmak üzere iki farklı CI/CD platformunu desteklemektedir. 
+                Her iki platform da production-ready pipeline'lara sahiptir ve Harbor registry üzerinden 
+                Kubernetes cluster'larına otomatik deployment yapabilir.
+            </p>
+            
+            <div class="success-box">
+                <h4>✅ Pipeline Özellikleri</h4>
+                <ul class="feature-list">
+                    <li>Otomatik Docker image build ve push</li>
+                    <li>Unit test ve code coverage raporlama</li>
+                    <li>Harbor private registry entegrasyonu</li>
+                    <li>Kubernetes otomatik deployment</li>
+                    <li>Environment-based deployment (dev, prod)</li>
+                    <li>Manuel approval mekanizması</li>
+                    <li>Rollback desteği</li>
+                    <li>Health check ve smoke tests</li>
+                </ul>
+            </div>
+            
+            <h3>🔄 CI/CD Akış Diyagramı</h3>
+            
+            <div class="pipeline-flow">
+<pre>
+┌─────────────────┐
+│  Code Commit    │  Developer pushes code to repository
+└────────┬────────┘
+         │
+    ┌────▼─────┐
+    │  BUILD   │  ◄─── Docker BuildKit
+    │  STAGE   │       Multi-stage builds
+    └────┬─────┘       Build caching
+         │
+         ├─── API Docker Image (ASP.NET Core 9)
+         └─── Portal Docker Image (Angular)
+         │
+    ┌────▼─────┐
+    │  TEST    │  ◄─── Unit Tests (xUnit, Jasmine)
+    │  STAGE   │       Code Coverage (>80%)
+    └────┬─────┘       Linting (ESLint)
+         │
+         ├─── Test Reports (JUnit XML)
+         └─── Coverage Reports (Cobertura)
+         │
+    ┌────▼─────┐
+    │  PUSH    │  ◄─── Harbor Private Registry
+    │  STAGE   │       Multi-tag strategy
+    └────┬─────┘       Image signing
+         │
+         ├─── Tag: {commit-sha}
+         ├─── Tag: {branch-name}
+         └─── Tag: latest (main only)
+         │
+    ┌────▼─────┐
+    │  DEPLOY  │  ◄─── Manual Approval
+    │  STAGE   │       Environment selection
+    └────┬─────┘       Kubernetes deployment
+         │
+         ├─── Development (kubectl apply)
+         └─── Production (kubectl apply)
+         │
+    ┌────▼─────┐
+    │  VERIFY  │  ◄─── Health Checks
+    │  STAGE   │       Smoke Tests
+    └────┬─────┘       Rollout Status
+         │
+         └─── ✅ Deployment Success
+              ❌ Rollback on Failure
+</pre>
+            </div>
+        </section>
+        
+        <section id="platforms">
+            <h2>🔧 CI/CD Platformları</h2>
+            
+            <div class="platform-tabs">
+                <div class="tab active" onclick="switchTab('gitlab')">
+                    <span class="gitlab-badge">GitLab</span>
+                    <span>GitLab CI/CD</span>
+                </div>
+                <div class="tab" onclick="switchTab('github')">
+                    <span class="github-badge">GitHub</span>
+                    <span>GitHub Actions</span>
+                </div>
+                <div class="tab" onclick="switchTab('comparison')">
+                    <span>⚖️</span>
+                    <span>Karşılaştırma</span>
+                </div>
+            </div>
+            
+            <div id="gitlab-content" class="tab-content active">
+                <h3>🦊 GitLab CI/CD Pipeline</h3>
+                
+                <div class="info-box">
+                    <h4>📄 Pipeline Dosyası: .gitlab-ci.yml</h4>
+                    <p>Tek dosyada tüm pipeline tanımlaması. 5 stage'li professional CI/CD akışı.</p>
+                </div>
+                
+                <h4>Pipeline Stages</h4>
+                
+                <div class="stage-grid">
+                    <div class="stage-card">
+                        <h4><span class="stage-icon">🔨</span> 1. Build</h4>
+                        <ul>
+                            <li>API Docker image build</li>
+                            <li>Portal Docker image build</li>
+                            <li>Docker BuildKit kullanımı</li>
+                            <li>Multi-stage optimization</li>
+                            <li>Artifact storage (1 saat)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="stage-card">
+                        <h4><span class="stage-icon">🧪</span> 2. Test</h4>
+                        <ul>
+                            <li>.NET unit tests (xUnit)</li>
+                            <li>Angular tests (Jasmine)</li>
+                            <li>Code coverage raporlama</li>
+                            <li>ESLint code quality</li>
+                            <li>JUnit XML reports</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="stage-card">
+                        <h4><span class="stage-icon">📤</span> 3. Push</h4>
+                        <ul>
+                            <li>Harbor registry login</li>
+                            <li>Multi-tag push</li>
+                            <li>Image verification</li>
+                            <li>Only: main, develop</li>
+                            <li>Retry on failure</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="stage-card">
+                        <h4><span class="stage-icon">🚀</span> 4. Deploy</h4>
+                        <ul>
+                            <li>Manuel trigger (güvenlik)</li>
+                            <li>Development environment</li>
+                            <li>Production environment</li>
+                            <li>Kubernetes deployment</li>
+                            <li>Rollout monitoring</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="stage-card">
+                        <h4><span class="stage-icon">🧹</span> 5. Cleanup</h4>
+                        <ul>
+                            <li>Docker resource pruning</li>
+                            <li>Unused image cleanup</li>
+                            <li>Otomatik çalışma</li>
+                            <li>Disk space optimization</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h4>Kurulum Adımları</h4>
+                
+                <div class="steps-container">
+                    <div class="step">
+                        <span class="step-number">1</span>
+                        <strong>GitLab Variables Ayarla</strong>
+                        <p>Settings > CI/CD > Variables sayfasından aşağıdaki değişkenleri ekleyin:</p>
+                    </div>
+                    
+                    <div class="code-block">
+# Harbor Registry
+GTECH_REPO_URL          = harbor.example.com
+GTECH_REPO_USERNAME     = robot$securebox
+GTECH_REPO_TOKEN        = &lt;your-harbor-token&gt;
+
+# Kubernetes
+KUBECONFIG_DEV          = &lt;base64-encoded-kubeconfig&gt;
+KUBECONFIG_PROD         = &lt;base64-encoded-kubeconfig&gt;
+                    </div>
+                    
+                    <div class="step">
+                        <span class="step-number">2</span>
+                        <strong>Pipeline'ı Tetikle</strong>
+                        <p>Kodu push ederek pipeline'ı otomatik başlatın:</p>
+                    </div>
+                    
+                    <div class="code-block">
+# Main branch'e push
+git push origin main
+
+# Pipeline otomatik çalışacak:
+# → build → test → push → (deploy: manuel)
+                    </div>
+                    
+                    <div class="step">
+                        <span class="step-number">3</span>
+                        <strong>Manuel Deployment</strong>
+                        <p>GitLab UI'da pipeline sayfasından deploy job'unu manuel olarak çalıştırın.</p>
+                    </div>
+                </div>
+                
+                <div class="success-box">
+                    <h4>✅ GitLab CI/CD Avantajları</h4>
+                    <ul class="feature-list">
+                        <li>Tek platform çözümü (SCM + CI/CD + Registry)</li>
+                        <li>Built-in test reporting ve coverage tracking</li>
+                        <li>Native Docker-in-Docker support</li>
+                        <li>Environment management ve deployment history</li>
+                        <li>Self-hosted runner desteği</li>
+                        <li>Enterprise security features</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="github-content" class="tab-content">
+                <h3>🐙 GitHub Actions Pipeline</h3>
+                
+                <div class="info-box">
+                    <h4>📄 Workflow Dosyaları: .github/workflows/</h4>
+                    <p>Modüler yapı: Ayrı workflow'lar (build, deploy). Marketplace actions entegrasyonu.</p>
+                </div>
+                
+                <h4>Workflow Yapısı</h4>
+                
+                <div class="stage-grid">
+                    <div class="stage-card">
+                        <h4><span class="stage-icon">🔨</span> Build and Push</h4>
+                        <p><strong>Dosya:</strong> build-and-push.yml</p>
+                        <ul>
+                            <li>Otomatik tetikleme (push)</li>
+                            <li>API ve Portal build</li>
+                            <li>Harbor registry push</li>
+                            <li>Docker cache optimization</li>
+                            <li>Build status notification</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="stage-card">
+                        <h4><span class="stage-icon">🚀</span> Deploy to K8s</h4>
+                        <p><strong>Dosya:</strong> deploy-to-k8s.yml</p>
+                        <ul>
+                            <li>Workflow trigger / Manuel</li>
+                            <li>Kubernetes connection</li>
+                            <li>Namespace ve secrets</li>
+                            <li>Database deployment</li>
+                            <li>App deployment</li>
+                            <li>Smoke tests</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <h4>Kurulum Adımları</h4>
+                
+                <div class="steps-container">
+                    <div class="step">
+                        <span class="step-number">1</span>
+                        <strong>GitHub Secrets Ayarla</strong>
+                        <p>Settings > Secrets and variables > Actions sayfasından ekleyin:</p>
+                    </div>
+                    
+                    <div class="code-block">
+# Harbor Registry
+GTECH_REPO_URL          = harbor.example.com
+GTECH_REPO_USERNAME     = robot$securebox
+GTECH_REPO_TOKEN        = &lt;your-harbor-token&gt;
+
+# Kubernetes
+KUBECONFIG              = &lt;base64-encoded-kubeconfig&gt;
+                    </div>
+                    
+                    <div class="step">
+                        <span class="step-number">2</span>
+                        <strong>Workflow'ı Tetikle</strong>
+                        <p>Kodu push ederek build workflow'u otomatik başlatın:</p>
+                    </div>
+                    
+                    <div class="code-block">
+# Main branch'e push
+git push origin main
+
+# Build workflow otomatik çalışacak
+# Deploy workflow manuel veya otomatik tetiklenebilir
+                    </div>
+                    
+                    <div class="step">
+                        <span class="step-number">3</span>
+                        <strong>Manuel Deploy</strong>
+                        <p>GitHub Actions sayfasından "Deploy to Kubernetes" workflow'unu çalıştırın.</p>
+                    </div>
+                </div>
+                
+                <div class="success-box">
+                    <h4>✅ GitHub Actions Avantajları</h4>
+                    <ul class="feature-list">
+                        <li>Binlerce hazır action (Marketplace)</li>
+                        <li>Ücretsiz tier (2000 dakika/ay)</li>
+                        <li>Open source için unlimited free</li>
+                        <li>Modüler workflow yapısı</li>
+                        <li>Reusable workflows</li>
+                        <li>Güçlü community desteği</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="comparison-content" class="tab-content">
+                <h3>⚖️ Platform Karşılaştırması</h3>
+                
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Özellik</th>
+                            <th>GitLab CI/CD</th>
+                            <th>GitHub Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Yapılandırma</strong></td>
+                            <td>.gitlab-ci.yml (tek dosya)</td>
+                            <td>.github/workflows/*.yml (modüler)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pipeline Yapısı</strong></td>
+                            <td>Stages ile otomatik sıralama</td>
+                            <td>Jobs ile manuel dependency</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Docker Support</strong></td>
+                            <td>⭐⭐⭐⭐⭐ Native DinD</td>
+                            <td>⭐⭐⭐⭐ Docker available</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Test Reporting</strong></td>
+                            <td>⭐⭐⭐⭐⭐ Built-in</td>
+                            <td>⭐⭐⭐⭐ Action-based</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Marketplace</strong></td>
+                            <td>⭐⭐⭐ Limited</td>
+                            <td>⭐⭐⭐⭐⭐ Binlerce action</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Caching</strong></td>
+                            <td>Built-in cache</td>
+                            <td>actions/cache</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Free Tier</strong></td>
+                            <td>400 minutes/month</td>
+                            <td>2000 minutes/month</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Self-hosted</strong></td>
+                            <td>⭐⭐⭐⭐⭐ GitLab Runner</td>
+                            <td>⭐⭐⭐⭐ Supported</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Environment Management</strong></td>
+                            <td>⭐⭐⭐⭐⭐ Built-in tracking</td>
+                            <td>⭐⭐⭐⭐ Protection rules</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Enterprise Features</strong></td>
+                            <td>⭐⭐⭐⭐⭐ Comprehensive</td>
+                            <td>⭐⭐⭐⭐ Good</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h4 style="margin-top: 40px;">📊 Hangi Platform Seçilmeli?</h4>
+                
+                <div class="stage-grid" style="margin-top: 20px;">
+                    <div class="stage-card" style="border-left-color: var(--gitlab);">
+                        <h4 style="color: var(--gitlab);">
+                            <span class="gitlab-badge">GitLab</span> GitLab CI/CD Seçin
+                        </h4>
+                        <ul class="feature-list">
+                            <li>GitLab zaten kullanıyorsanız</li>
+                            <li>Tek platform tercih ediyorsanız</li>
+                            <li>Built-in features önemliyse</li>
+                            <li>Self-hosted runner istiyorsanız</li>
+                            <li>Enterprise features gerekiyorsa</li>
+                            <li>On-premise deployment</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="stage-card" style="border-left-color: var(--github);">
+                        <h4 style="color: var(--github);">
+                            <span class="github-badge">GitHub</span> GitHub Actions Seçin
+                        </h4>
+                        <ul class="feature-list">
+                            <li>GitHub kullanıyorsanız</li>
+                            <li>Marketplace actions'lardan yararlanmak</li>
+                            <li>Open source projeniz varsa</li>
+                            <li>Daha fazla free tier (2000 dk)</li>
+                            <li>Modüler workflows</li>
+                            <li>Community support</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h4>💡 İyi Haber!</h4>
+                    <p>Secure Box projesi <strong>her iki platform için de</strong> tam destek sunuyor! 
+                    Platform değiştirmek isterseniz sadece secrets/variables'ı yeni platforma taşımanız yeterli. 
+                    Harbor registry her ikisi için de ortak kullanılıyor.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="kubernetes">
+            <h2>☸️ Kubernetes Deployment</h2>
+            
+            <p style="font-size: 1.1em; line-height: 1.8; margin: 20px 0;">
+                CI/CD pipeline'larından sonra Docker image'lar Harbor registry'de saklanır ve 
+                Kubernetes cluster'larına deploy edilir. Secure Box, production-ready Kubernetes 
+                manifests ve otomatik deployment scriptleri ile birlikte gelir.
+            </p>
+            
+            <h3>🎯 Deployment Mimarisi</h3>
+            
+            <div class="pipeline-flow">
+<pre>
+┌──────────────────────────────────────────────────┐
+│            Kubernetes Cluster                     │
+│                                                   │
+│  ┌─────────────────────────────────────────┐    │
+│  │  Namespace: securebox                    │    │
+│  │                                          │    │
+│  │  ┌────────────┐      ┌────────────┐    │    │
+│  │  │   Nginx    │◄─────┤LoadBalancer│    │    │
+│  │  │  (x2 pods) │      │  Service   │    │    │
+│  │  └─────┬──────┘      └────────────┘    │    │
+│  │        │                                 │    │
+│  │   ┌────┴────────────────┐              │    │
+│  │   │                      │              │    │
+│  │ ┌─▼─────────┐    ┌──────▼──┐          │    │
+│  │ │  Portal   │    │   API   │          │    │
+│  │ │ (x2 pods) │    │(x2+ HPA)│          │    │
+│  │ └───────────┘    └────┬────┘          │    │
+│  │                       │                 │    │
+│  │   ┌───────────────────┼─────────┐     │    │
+│  │   │                   │         │     │    │
+│  │ ┌─▼────┐  ┌──────────▼┐  ┌─────▼┐   │    │
+│  │ │Postgres│ │  MongoDB  │  │Redis │   │    │
+│  │ │StatefulSet│StatefulSet│ │ (x1) │   │    │
+│  │ └────────┘ └───────────┘  └──────┘   │    │
+│  │                                        │    │
+│  │            ┌──────────┐               │    │
+│  │            │ RabbitMQ │               │    │
+│  │            │  (x1)    │               │    │
+│  │            └──────────┘               │    │
+│  └─────────────────────────────────────┘    │
+└───────────────────────────────────────────────┘
+</pre>
+            </div>
+            
+            <h3>🚀 Hızlı Deployment</h3>
+            
+            <div class="steps-container">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Harbor Credentials Ayarla</strong>
+                </div>
+                
+                <div class="code-block">
+export GTECH_REPO_URL="harbor.example.com"
+export GTECH_REPO_USERNAME="robot\$securebox"
+export GTECH_REPO_TOKEN="your-token-here"
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Otomatik Deployment Script Çalıştır</strong>
+                </div>
+                
+                <div class="code-block">
+# Deployment script'i çalıştır
+./scripts/deploy-to-k8s.sh
+
+# Script otomatik olarak:
+# ✅ Namespace oluşturur
+# ✅ Harbor secret oluşturur
+# ✅ Database'leri deploy eder
+# ✅ Application'ı deploy eder
+# ✅ Health check yapar
+# ✅ LoadBalancer IP'yi gösterir
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Deployment Durumunu Kontrol Et</strong>
+                </div>
+                
+                <div class="code-block">
+# Pod'ları listele
+kubectl get pods -n securebox
+
+# Service'leri kontrol et
+kubectl get svc -n securebox
+
+# LoadBalancer IP'yi al
+kubectl get svc nginx-service -n securebox
+
+# Uygulamaya erişim
+# http://&lt;EXTERNAL-IP&gt;
+                </div>
+            </div>
+            
+            <h3>📊 Kubernetes Kaynakları</h3>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Kaynak</th>
+                        <th>Tip</th>
+                        <th>Replica</th>
+                        <th>Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>securebox-api</td>
+                        <td>Deployment + HPA</td>
+                        <td>2-10</td>
+                        <td>Backend API (auto-scaling)</td>
+                    </tr>
+                    <tr>
+                        <td>securebox-portal</td>
+                        <td>Deployment + HPA</td>
+                        <td>2-5</td>
+                        <td>Frontend Portal (auto-scaling)</td>
+                    </tr>
+                    <tr>
+                        <td>nginx</td>
+                        <td>Deployment</td>
+                        <td>2</td>
+                        <td>Reverse proxy & load balancer</td>
+                    </tr>
+                    <tr>
+                        <td>postgres</td>
+                        <td>StatefulSet + PVC</td>
+                        <td>1</td>
+                        <td>PostgreSQL database (10Gi)</td>
+                    </tr>
+                    <tr>
+                        <td>mongodb</td>
+                        <td>StatefulSet + PVC</td>
+                        <td>1</td>
+                        <td>MongoDB log store (10Gi)</td>
+                    </tr>
+                    <tr>
+                        <td>redis</td>
+                        <td>Deployment</td>
+                        <td>1</td>
+                        <td>Redis cache</td>
+                    </tr>
+                    <tr>
+                        <td>rabbitmq</td>
+                        <td>Deployment</td>
+                        <td>1</td>
+                        <td>RabbitMQ message broker</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="success-box">
+                <h4>✅ Auto-Scaling (HPA)</h4>
+                <p>API ve Portal için Horizontal Pod Autoscaler (HPA) aktif:</p>
+                <ul class="feature-list">
+                    <li><strong>API:</strong> 2-10 replica, CPU 70%, Memory 80% threshold</li>
+                    <li><strong>Portal:</strong> 2-5 replica, CPU 70%, Memory 80% threshold</li>
+                    <li>Otomatik scale up/down</li>
+                    <li>Load-based optimization</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section id="best-practices">
+            <h2>💡 Best Practices</h2>
+            
+            <div class="best-practices">
+                <h3>🎯 CI/CD Best Practices</h3>
+                <ul>
+                    <li>Protected branches kullan (main, develop)</li>
+                    <li>Production deployment için manuel approval zorunlu</li>
+                    <li>Her deployment için rollback stratejisi hazır</li>
+                    <li>Smoke test ve health check mutlaka çalıştır</li>
+                    <li>Docker layer caching kullan (build süre optimizasyonu)</li>
+                    <li>Secrets asla kod'a commit etme (variables/secrets kullan)</li>
+                    <li>Image tagging stratejisi: commit-sha + branch + latest</li>
+                    <li>Pipeline başarısızlıklarında notification gönder</li>
+                </ul>
+            </div>
+            
+            <h3>🔐 Security Best Practices</h3>
+            
+            <div class="stage-grid">
+                <div class="stage-card">
+                    <h4><span class="stage-icon">🔑</span> Secrets Management</h4>
+                    <ul>
+                        <li>GitLab: Protected & Masked variables</li>
+                        <li>GitHub: Encrypted secrets</li>
+                        <li>Harbor: Robot accounts (not user accounts)</li>
+                        <li>Token expiration: Max 1 yıl</li>
+                        <li>Regular secret rotation</li>
+                    </ul>
+                </div>
+                
+                <div class="stage-card">
+                    <h4><span class="stage-icon">🛡️</span> Image Security</h4>
+                    <ul>
+                        <li>Private registry kullan (Harbor)</li>
+                        <li>Image scanning (vulnerability check)</li>
+                        <li>Multi-stage builds (küçük image)</li>
+                        <li>Non-root user kullan</li>
+                        <li>Sensitive data image'a dahil etme</li>
+                    </ul>
+                </div>
+                
+                <div class="stage-card">
+                    <h4><span class="stage-icon">☸️</span> Kubernetes Security</h4>
+                    <ul>
+                        <li>RBAC permissions (least privilege)</li>
+                        <li>Network policies (pod isolation)</li>
+                        <li>Resource limits (prevent resource abuse)</li>
+                        <li>Pod security policies</li>
+                        <li>Secrets encryption at rest</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h3>📈 Performance Best Practices</h3>
+            
+            <div class="info-box">
+                <h4>⚡ Build Optimization</h4>
+                <ul class="feature-list">
+                    <li><strong>Docker BuildKit:</strong> Parallel build stages</li>
+                    <li><strong>Layer Caching:</strong> Dockerfile layer order optimizasyonu</li>
+                    <li><strong>Multi-stage Builds:</strong> Production image'da sadece gerekli dosyalar</li>
+                    <li><strong>Artifact Caching:</strong> npm, nuget paketlerini cache'le</li>
+                    <li><strong>Paralel Jobs:</strong> API ve Portal build'leri paralel çalıştır</li>
+                </ul>
+            </div>
+            
+            <h3>🐛 Troubleshooting</h3>
+            
+            <div class="warning-box">
+                <h4>⚠️ Yaygın Sorunlar ve Çözümleri</h4>
+                
+                <p><strong>1. Build Hatası:</strong></p>
+                <ul>
+                    <li>Build logs'ı detaylı incele</li>
+                    <li>Local'de Docker build test et (<code>docker build --no-cache</code>)</li>
+                    <li>Dockerfile syntax kontrol</li>
+                </ul>
+                
+                <p style="margin-top: 15px;"><strong>2. Image Pull Error (ImagePullBackOff):</strong></p>
+                <ul>
+                    <li>Harbor secret kontrol: <code>kubectl get secret harbor-registry-secret -n securebox</code></li>
+                    <li>Credentials test et: <code>docker login $GTECH_REPO_URL</code></li>
+                    <li>Image tag doğru mu kontrol et</li>
+                </ul>
+                
+                <p style="margin-top: 15px;"><strong>3. Deployment Başarısız:</strong></p>
+                <ul>
+                    <li>Pod events kontrol: <code>kubectl describe pod &lt;pod-name&gt; -n securebox</code></li>
+                    <li>Pod logs: <code>kubectl logs &lt;pod-name&gt; -n securebox</code></li>
+                    <li>Resource limits yeterli mi kontrol et</li>
+                </ul>
+                
+                <p style="margin-top: 15px;"><strong>4. Test Başarısız:</strong></p>
+                <ul>
+                    <li>Test reports'ı incele (GitLab/GitHub UI)</li>
+                    <li>Local'de test çalıştır: <code>dotnet test --verbosity detailed</code></li>
+                    <li>Test coverage %80+ olmalı</li>
+                </ul>
+            </div>
+        </section>
+        
+        <section style="margin-top: 50px; padding: 30px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; border-radius: 12px;">
+            <h2 style="color: white; border-bottom: 2px solid white;">📚 Ek Kaynaklar</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div>
+                    <h4 style="color: white; margin-bottom: 10px;">📄 Dökümanlar</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 5px 0;"><a href="../CI-CD-README.md" style="color: white;">CI/CD README</a></li>
+                        <li style="padding: 5px 0;"><a href="GITLAB-CI-CD.md" style="color: white;">GitLab CI/CD Guide</a></li>
+                        <li style="padding: 5px 0;"><a href="CI-CD-COMPARISON.md" style="color: white;">Platform Comparison</a></li>
+                        <li style="padding: 5px 0;"><a href="../KUBERNETES-DEPLOYMENT.md" style="color: white;">Kubernetes Deployment</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: white; margin-bottom: 10px;">🔧 Scripts</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 5px 0;"><code>./scripts/deploy-to-k8s.sh</code></li>
+                        <li style="padding: 5px 0;"><code>./scripts/cleanup-k8s.sh</code></li>
+                        <li style="padding: 5px 0;"><code>./scripts/k8s-deploy.sh</code></li>
+                        <li style="padding: 5px 0;"><code>./scripts/k8s-cleanup.sh</code></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: white; margin-bottom: 10px;">📂 Kubernetes</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 5px 0;"><code>kubernetes/base/</code></li>
+                        <li style="padding: 5px 0;"><code>kubernetes/overlays/dev/</code></li>
+                        <li style="padding: 5px 0;"><code>kubernetes/overlays/prod/</code></li>
+                        <li style="padding: 5px 0;"><a href="../kubernetes/README.md" style="color: white;">Kubernetes README</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.1em; margin-bottom: 10px;">
+                <strong>Secure Box - CI/CD Pipeline Dokümantasyonu</strong>
+            </p>
+            <p>Versiyon: 1.0.0 MVP | Son Güncelleme: 2025-11-10</p>
+            <p style="margin-top: 15px;">
+                <a href="index.html" style="color: var(--accent-color); text-decoration: none;">← Ana Sayfaya Dön</a> | 
+                <a href="technical-documentation.html" style="color: var(--accent-color); text-decoration: none; margin-left: 20px;">Teknik Döküman →</a>
+            </p>
+        </div>
+    </footer>
+    
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            const selectedContent = document.getElementById(tabName + '-content');
+            if (selectedContent) {
+                selectedContent.classList.add('active');
+            }
+            
+            // Add active class to clicked tab
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>
+

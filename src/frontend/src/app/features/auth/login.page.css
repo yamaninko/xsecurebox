@@ -138,6 +138,59 @@ mat-form-field {
   border-radius: 4px;
 }
 
+/* Documentation Link */
+.documentation-link {
+  margin-top: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, #f5f5f5, #e8eaf6);
+  border-radius: 8px;
+  border-left: 5px solid var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.documentation-link:hover {
+  background: linear-gradient(135deg, #e8eaf6, #d1d5fa);
+  transform: translateX(4px);
+  box-shadow: 0 4px 8px rgba(103, 58, 183, 0.2);
+}
+
+.doc-icon {
+  color: var(--primary-color);
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.doc-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--primary-color);
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+  transition: color 0.3s ease;
+}
+
+.doc-link:hover {
+  color: var(--primary-dark-color);
+}
+
+.doc-link span {
+  flex: 1;
+}
+
+.external-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
 /* Footer */
 .login-footer {
   margin-top: 24px;
@@ -197,6 +250,14 @@ mat-form-field {
   .login-info {
     gap: 10px;
   }
+
+  .documentation-link {
+    gap: 10px;
+  }
+
+  .doc-link {
+    font-size: 13px;
+  }
 }
 
 @media screen and (max-width: 480px) {
@@ -230,6 +291,21 @@ mat-form-field {
 
   .login-info p {
     font-size: 13px;
+  }
+
+  .documentation-link {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .doc-link {
+    font-size: 13px;
+  }
+
+  .doc-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 }
 
