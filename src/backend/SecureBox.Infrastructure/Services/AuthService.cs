@@ -317,7 +317,7 @@ public class UserService : IUserService
 
         if (!string.IsNullOrWhiteSpace(queryParams.Search))
         {
-            query = query.Where(u => u.Username.Contains(queryParams.Search) || 
+            query = query.Where(u => u.Username.Contains(queryParams.Search) ||
                                      u.Email.Contains(queryParams.Search));
         }
 
@@ -344,7 +344,7 @@ public class UserService : IUserService
 
         return users;
     }
-    
+
     public async Task<UserDto?> GetUserByIdAsync(Guid userId)
     {
         var user = await _dbContext.Users
@@ -366,11 +366,11 @@ public class UserService : IUserService
             user.LastLoginAt
         );
     }
-    
+
     public async Task<UserDto> CreateUserAsync(CreateUserRequest request)
     {
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-        
+
         var user = new User
         {
             UserId = Guid.NewGuid(),
@@ -399,7 +399,7 @@ public class UserService : IUserService
             user.LastLoginAt
         );
     }
-    
+
     public async Task<UserDto> UpdateUserAsync(Guid userId, UpdateUserRequest request)
     {
         var user = await _dbContext.Users.FindAsync(userId);
@@ -425,7 +425,7 @@ public class UserService : IUserService
             user.LastLoginAt
         );
     }
-    
+
     public async Task DeleteUserAsync(Guid userId)
     {
         var user = await _dbContext.Users.FindAsync(userId);
@@ -473,27 +473,27 @@ public class CertificateService : ICertificateService
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<CertificateDto?> GetCertificateByIdAsync(Guid certificateId)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<CertificateDto> UploadCertificateAsync(UploadCertificateRequest request, Guid uploadedBy)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<CertificateDto> UpdateCertificateAsync(Guid certificateId, UpdateCertificateRequest request)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task RevokeCertificateAsync(Guid certificateId, string reason, Guid revokedBy)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task DeleteCertificateAsync(Guid certificateId)
     {
         throw new NotImplementedException();
@@ -506,37 +506,37 @@ public class KeyService : IKeyService
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<KeyDto?> GetKeyByIdAsync(Guid keyId, Guid userId, bool isAdmin)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<KeyDto> CreateKeyAsync(CreateKeyRequest request, Guid createdBy)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<RetrieveKeyResponse> RetrieveKeyAsync(Guid keyId, Guid userId, string? reason)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<KeyDto> UpdateKeyAsync(Guid keyId, UpdateKeyRequest request)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<KeyDto> RotateKeyAsync(Guid keyId, string newValue, string? reason, Guid userId)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task RevokeKeyAsync(Guid keyId, string reason, Guid revokedBy)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task DeleteKeyAsync(Guid keyId)
     {
         throw new NotImplementedException();
@@ -550,13 +550,13 @@ public class EncryptionService : IEncryptionService
         // TODO: Implement AES-256-GCM encryption with certificate
         throw new NotImplementedException();
     }
-    
+
     public Task<string> DecryptAsync(byte[] ciphertext, byte[] iv, byte[] tag, Guid certificateId)
     {
         // TODO: Implement AES-256-GCM decryption with certificate
         throw new NotImplementedException();
     }
-    
+
     public Task<bool> ValidateCertificateAsync(Guid certificateId)
     {
         throw new NotImplementedException();
@@ -569,12 +569,12 @@ public class AuditService : IAuditService
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<IEnumerable<AuditTrailDto>> GetAuditTrailsAsync(AuditQueryParams queryParams)
     {
         throw new NotImplementedException();
     }
-    
+
     public Task<IEnumerable<KeyAccessLogDto>> GetKeyAccessLogsAsync(Guid keyId, Guid? userId)
     {
         throw new NotImplementedException();
