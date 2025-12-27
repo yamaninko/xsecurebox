@@ -171,19 +171,3 @@ public class AuditService : IAuditService
         throw new NotImplementedException();
     }
 }
-
-public class RabbitMQService : IMessageBrokerService
-{
-    public void PublishMessage(string queueName, object message)
-    {
-        // TODO: Implement RabbitMQ publish
-        throw new NotImplementedException();
-    }
-    
-    public void SubscribeToQueue<T>(string queueName, Action<T> onMessage)
-    {
-        // TODO: Implement RabbitMQ subscribe
-        throw new NotImplementedException();
-    }
-}
-
