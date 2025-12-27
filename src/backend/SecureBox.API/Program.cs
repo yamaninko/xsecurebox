@@ -1,14 +1,18 @@
+using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SecureBox.API.Middleware;
 using SecureBox.Core.Interfaces;
+using SecureBox.Core.Validators;
 using SecureBox.Infrastructure.Data;
 using SecureBox.Infrastructure.Services;
 using Serilog;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +27,37 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(e => e.Value.Errors.Count > 0)
+                .SelectMany(x => x.Value.Errors.Select(e => new ValidationErrorDetail
+                {
+                    Field = x.Key,
+                    Message = e.ErrorMessage
+                }))
+                .ToList();
+
+            var response = new ErrorResponse
+            {
+                Success = false,
+                Error = new ErrorDetail
+                {
+                    Code = "VALIDATION_ERROR",
+                    Message = "Validation failed",
+                    Details = errors
+                }
+            };
+
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(response);
+        };
+    });
+builder.Services.AddFluentValidationAutoValidation()
+                .AddFluentValidationClientsideAdapters();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 builder.Services.AddEndpointsApiExplorer();
 
 // Swagger/OpenAPI
@@ -35,7 +69,7 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = "High-security key management system API"
     });
-    
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
@@ -44,7 +78,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -63,7 +97,12 @@ builder.Services.AddSwaggerGen(c =>
 
 // Database - PostgreSQL
 builder.Services.AddDbContext<SecureBoxDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL")));
+{
+    if (!builder.Environment.IsEnvironment("Testing"))
+    {
+        options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQL"));
+    }
+});
 
 // Redis Cache
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -156,6 +195,8 @@ if (!disableHttpsRedirect)
 
 app.UseCors("AllowPortal");
 
+app.UseMiddleware<ExceptionMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -175,3 +216,5 @@ catch (Exception ex)
 Log.Information("Secure Box API starting up...");
 
 app.Run();
+
+public partial class Program { }

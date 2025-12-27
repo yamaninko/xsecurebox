@@ -80,7 +80,7 @@ public static class DatabaseInitializer
             return;
         }
 
-        if (options.ApplyMigrationsOnStartup)
+        if (options.ApplyMigrationsOnStartup && dbContext.Database.IsRelational())
         {
             await ApplyMigrationsAsync(dbContext, logger, cancellationToken);
         }
@@ -125,7 +125,7 @@ public static class DatabaseInitializer
         var allPermissions = await dbContext.Permissions
             .AsNoTracking()
             .ToListAsync(cancellationToken);
-        
+
         var existing = new Dictionary<string, Permission>(StringComparer.OrdinalIgnoreCase);
         foreach (var permission in allPermissions)
         {
@@ -167,7 +167,7 @@ public static class DatabaseInitializer
                 var reloadedPermissions = await dbContext.Permissions
                     .AsNoTracking()
                     .ToListAsync(cancellationToken);
-                
+
                 existing.Clear();
                 foreach (var permission in reloadedPermissions)
                 {
@@ -187,7 +187,7 @@ public static class DatabaseInitializer
         var allRoles = await dbContext.Roles
             .AsNoTracking()
             .ToListAsync(cancellationToken);
-        
+
         var existing = new Dictionary<string, Role>(StringComparer.OrdinalIgnoreCase);
         foreach (var role in allRoles)
         {
@@ -229,7 +229,7 @@ public static class DatabaseInitializer
                 var reloadedRoles = await dbContext.Roles
                     .AsNoTracking()
                     .ToListAsync(cancellationToken);
-                
+
                 existing.Clear();
                 foreach (var role in reloadedRoles)
                 {
@@ -310,7 +310,7 @@ public static class DatabaseInitializer
             // Default admin password: Admin@123
             var defaultPassword = "Admin@123";
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
-            
+
             adminUser = new User
             {
                 UserId = AdminUserId,

@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "YGMlp88lITw=",
+  "dgSpecHash": "MUlQuZGbDJw=",
   "success": true,
   "projectFilePath": "/Users/gtmac29/projects/secure-box/src/backend/SecureBox.Infrastructure/SecureBox.Infrastructure.csproj",
   "expectedPackageFiles": [
     "/Users/gtmac29/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/dnsclient/1.6.1/dnsclient.1.6.1.nupkg.sha512",
+    "/Users/gtmac29/.nuget/packages/fluentvalidation/11.11.0/fluentvalidation.11.11.0.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.entityframeworkcore/9.0.0/microsoft.entityframeworkcore.9.0.0.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.entityframeworkcore.abstractions/9.0.0/microsoft.entityframeworkcore.abstractions.9.0.0.nupkg.sha512",
     "/Users/gtmac29/.nuget/packages/microsoft.entityframeworkcore.analyzers/9.0.0/microsoft.entityframeworkcore.analyzers.9.0.0.nupkg.sha512",
