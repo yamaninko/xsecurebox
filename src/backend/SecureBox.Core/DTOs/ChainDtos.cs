@@ -1,10 +1,17 @@
 namespace SecureBox.Core.DTOs;
 
 public record ChainNodeDto(
+    string Name,
     string Url,
+    string Role,
     bool Reachable,
     long? BlockNumber,
     long? ChainId,
+    int? PeerCount,
+    bool? Syncing,
+    bool? Mining,
+    string? ClientVersion,
+    long? LatencyMs,
     string? Error
 );
 
@@ -34,7 +41,13 @@ public record ChainDashboardDto(
     IReadOnlyList<ChainNodeDto> Nodes,
     IReadOnlyList<SealedKeyDto> SealedKeys,
     int RunningNodeCount = 0,
-    int MaxNodeCount = 7
+    int MaxNodeCount = 7,
+    int HealthyNodeCount = 0,
+    bool SupervisorReachable = false,
+    string? LoadBalancerUrl = null,
+    bool? LoadBalancerReachable = null,
+    string? OnChainSystemId = null,
+    string? ContractReadError = null
 );
 
 public record ChainScaleRequest(int NodeCount);

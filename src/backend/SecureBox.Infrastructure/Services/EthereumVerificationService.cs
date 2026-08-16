@@ -39,7 +39,7 @@ public sealed class DisabledChainVerificationService : IChainVerificationService
         Task.FromResult(EmptyDashboard());
 
     private static ChainDashboardDto EmptyDashboard() =>
-        new(false, null, null, null, null, null, null, 0, 1, false, "", "", Ethereum.EthereumArtifacts.Source, Ethereum.EthereumArtifacts.Abi, Array.Empty<ChainNodeDto>(), Array.Empty<SealedKeyDto>(), 0, 7);
+        new(false, null, null, null, null, null, null, 0, 1, false, "", "", Ethereum.EthereumArtifacts.Source, Ethereum.EthereumArtifacts.Abi, Array.Empty<ChainNodeDto>(), Array.Empty<SealedKeyDto>(), 0, 7, 0, false, null, null, null, null);
 }
 
 public sealed class EthereumVerificationService : IChainVerificationService
@@ -248,27 +248,64 @@ public sealed class EthereumVerificationService : IChainVerificationService
     public async Task<ChainDashboardDto> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
         var runtime = await LoadRuntimeAsync(cancellationToken);
-        var nodes = new List<ChainNodeDto>();
+        var cluster = await SupervisorSnapshotAsync(cancellationToken);
+        var probeUrls = new List<(string Name, string Url, string Role)>();
+        foreach (var node in cluster.Nodes)
+        {
+            probeUrls.Add((node.Name, node.Url, node.Index == 1 ? "sealer" : "replica"));
+        }
+
         foreach (var url in runtime.RpcUrls)
         {
-            nodes.Add(await ProbeNodeAsync(url));
+            if (probeUrls.Any(p => string.Equals(p.Url, url, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var role = url.Contains("eth-lb", StringComparison.OrdinalIgnoreCase) ? "load-balancer" : "rpc";
+            probeUrls.Add((role == "load-balancer" ? "eth-lb" : url, url, role));
+        }
+
+        if (!probeUrls.Any(p => p.Role == "load-balancer"))
+        {
+            probeUrls.Add(("eth-lb", "http://eth-lb:8545", "load-balancer"));
+        }
+
+        var nodes = new List<ChainNodeDto>();
+        foreach (var item in probeUrls)
+        {
+            nodes.Add(await ProbeNodeAsync(item.Name, item.Url, item.Role));
         }
 
         string? owner = null;
         bool? paused = null;
-        if (!string.IsNullOrWhiteSpace(runtime.ContractAddress) && runtime.RpcUrls.Length > 0)
+        string? onChainSystemId = null;
+        string? contractError = null;
+        var readUrl = nodes.FirstOrDefault(n => n.Reachable && n.Role != "load-balancer")?.Url
+                      ?? nodes.FirstOrDefault(n => n.Reachable)?.Url;
+        if (!string.IsNullOrWhiteSpace(runtime.ContractAddress) && readUrl != null)
         {
             try
             {
-                var web3 = new Web3(runtime.RpcUrls[0]);
+                var web3 = new Web3(readUrl);
                 var contract = web3.Eth.GetContract(EthereumArtifacts.Abi, runtime.ContractAddress);
                 owner = await contract.GetFunction("owner").CallAsync<string>();
                 paused = await contract.GetFunction("paused").CallAsync<bool>();
+                var sid = await contract.GetFunction("systemId").CallAsync<byte[]>();
+                if (sid is { Length: > 0 })
+                {
+                    onChainSystemId = CommitmentHasher.ToHex(sid);
+                }
             }
             catch (Exception ex)
             {
+                contractError = ex.Message;
                 _logger.LogWarning(ex, "Could not read contract view state");
             }
+        }
+        else if (string.IsNullOrWhiteSpace(runtime.ContractAddress))
+        {
+            contractError = "Kontrat adresi yok. Yeni kontrat yayınlayın.";
         }
 
         var sealedKeys = await _db.Keys.AsNoTracking()
@@ -279,7 +316,8 @@ public sealed class EthereumVerificationService : IChainVerificationService
             .ToListAsync(cancellationToken);
 
         var account = new Account(_privateKey, runtime.ChainId);
-        var cluster = await SupervisorStatusAsync(cancellationToken);
+        var lb = nodes.FirstOrDefault(n => n.Role == "load-balancer");
+        var workers = nodes.Where(n => n.Role is "sealer" or "replica").ToList();
         return new ChainDashboardDto(
             IsEnabled,
             runtime.ContractAddress,
@@ -298,7 +336,13 @@ public sealed class EthereumVerificationService : IChainVerificationService
             nodes,
             sealedKeys,
             cluster.Count,
-            cluster.Max);
+            cluster.Max,
+            workers.Count(n => n.Reachable),
+            cluster.SupervisorOk,
+            "http://eth-lb:8545",
+            lb?.Reachable,
+            onChainSystemId,
+            contractError);
     }
 
     public async Task<ChainDashboardDto> UpdateSettingsAsync(ChainSettingsRequest request, CancellationToken cancellationToken = default)
@@ -441,12 +485,16 @@ public sealed class EthereumVerificationService : IChainVerificationService
 
     private string? SupervisorUrl() => _configuration["Ethereum:SupervisorUrl"];
 
-    private async Task<(int Count, int Max)> SupervisorStatusAsync(CancellationToken cancellationToken)
+    private sealed record SupervisorNode(int Index, string Name, string Url);
+
+    private sealed record SupervisorSnapshot(bool SupervisorOk, int Count, int Max, IReadOnlyList<SupervisorNode> Nodes);
+
+    private async Task<SupervisorSnapshot> SupervisorSnapshotAsync(CancellationToken cancellationToken)
     {
         var supervisor = SupervisorUrl();
         if (string.IsNullOrWhiteSpace(supervisor))
         {
-            return (0, 7);
+            return new SupervisorSnapshot(false, 0, 7, Array.Empty<SupervisorNode>());
         }
 
         try
@@ -456,11 +504,23 @@ public sealed class EthereumVerificationService : IChainVerificationService
             using var doc = System.Text.Json.JsonDocument.Parse(json);
             var count = doc.RootElement.TryGetProperty("count", out var c) ? c.GetInt32() : 0;
             var max = doc.RootElement.TryGetProperty("max", out var m) ? m.GetInt32() : 7;
-            return (count, max);
+            var nodes = new List<SupervisorNode>();
+            if (doc.RootElement.TryGetProperty("nodes", out var arr))
+            {
+                foreach (var n in arr.EnumerateArray())
+                {
+                    nodes.Add(new SupervisorNode(
+                        n.TryGetProperty("index", out var i) ? i.GetInt32() : 0,
+                        n.TryGetProperty("name", out var name) ? name.GetString() ?? "" : "",
+                        n.TryGetProperty("url", out var url) ? url.GetString() ?? "" : ""));
+                }
+            }
+
+            return new SupervisorSnapshot(true, count, max, nodes);
         }
         catch
         {
-            return (0, 7);
+            return new SupervisorSnapshot(false, 0, 7, Array.Empty<SupervisorNode>());
         }
     }
 
@@ -490,19 +550,75 @@ public sealed class EthereumVerificationService : IChainVerificationService
             _chainId);
     }
 
-    private static async Task<ChainNodeDto> ProbeNodeAsync(string url)
+    private static async Task<ChainNodeDto> ProbeNodeAsync(string name, string url, string role)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            var web3 = new Web3(url);
-            var block = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
-            var chain = await web3.Eth.ChainId.SendRequestAsync();
-            return new ChainNodeDto(url, true, (long)block.Value, (long)chain.Value, null);
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
+            var block = await RpcHexAsync(http, url, "eth_blockNumber");
+            var chain = await RpcHexAsync(http, url, "eth_chainId");
+            var peers = await RpcHexAsync(http, url, "net_peerCount");
+            var miningEl = await RpcRawAsync(http, url, "eth_mining");
+            var syncEl = await RpcRawAsync(http, url, "eth_syncing");
+            var versionEl = await RpcRawAsync(http, url, "web3_clientVersion");
+            sw.Stop();
+            var mining = miningEl.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False
+                ? miningEl.GetBoolean()
+                : (bool?)null;
+            var syncing = syncEl.ValueKind == System.Text.Json.JsonValueKind.False
+                ? false
+                : syncEl.ValueKind == System.Text.Json.JsonValueKind.Object;
+            return new ChainNodeDto(
+                name,
+                url,
+                role,
+                true,
+                block,
+                chain,
+                peers.HasValue ? (int)peers.Value : null,
+                syncing,
+                mining,
+                versionEl.ValueKind == System.Text.Json.JsonValueKind.String ? versionEl.GetString() : null,
+                sw.ElapsedMilliseconds,
+                null);
         }
         catch (Exception ex)
         {
-            return new ChainNodeDto(url, false, null, null, ex.Message);
+            sw.Stop();
+            return new ChainNodeDto(name, url, role, false, null, null, null, null, null, null, sw.ElapsedMilliseconds, ex.Message);
         }
+    }
+
+    private static async Task<long?> RpcHexAsync(HttpClient http, string url, string method)
+    {
+        var el = await RpcRawAsync(http, url, method);
+        if (el.ValueKind != System.Text.Json.JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var hex = el.GetString();
+        if (string.IsNullOrWhiteSpace(hex))
+        {
+            return null;
+        }
+
+        return Convert.ToInt64(hex.Replace("0x", "", StringComparison.OrdinalIgnoreCase), 16);
+    }
+
+    private static async Task<System.Text.Json.JsonElement> RpcRawAsync(HttpClient http, string url, string method)
+    {
+        var payload = new { jsonrpc = "2.0", method, @params = Array.Empty<object>(), id = 1 };
+        using var resp = await http.PostAsJsonAsync(url, payload);
+        resp.EnsureSuccessStatusCode();
+        using var doc = System.Text.Json.JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+        if (doc.RootElement.TryGetProperty("error", out var err))
+        {
+            throw new InvalidOperationException(err.ToString());
+        }
+
+        return doc.RootElement.GetProperty("result").Clone();
     }
 
     private sealed record Runtime(

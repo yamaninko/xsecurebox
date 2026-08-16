@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChainService } from '../../core/services/chain.service';
@@ -11,7 +11,7 @@ import { NotificationService } from '../../core/services/notification.service';
   templateUrl: './chain.page.html',
   styleUrls: ['./chain.page.css']
 })
-export class ChainPageComponent implements OnInit {
+export class ChainPageComponent implements OnInit, OnDestroy {
   loading = true;
   saving = false;
   data: any = null;
@@ -31,8 +31,17 @@ export class ChainPageComponent implements OnInit {
     private notify: NotificationService
   ) {}
 
+  private timer: ReturnType<typeof setInterval> | null = null;
+
   ngOnInit(): void {
     this.refresh();
+    this.timer = setInterval(() => this.refresh(), 8000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
   }
 
   refresh(): void {
