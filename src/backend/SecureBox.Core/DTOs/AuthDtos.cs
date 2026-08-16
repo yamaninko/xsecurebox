@@ -2,12 +2,15 @@ namespace SecureBox.Core.DTOs;
 
 public record LoginRequest(string Username, string Password);
 
+public record AuthSession(string AccessToken, string RefreshToken, int ExpiresIn, UserDto User);
+
 public record AuthResponse(
-    string AccessToken,
-    string RefreshToken,
+    string? AccessToken,
     int ExpiresIn,
     string TokenType,
-    UserDto User
+    UserDto? User,
+    bool RequiresMfa = false,
+    string? MfaChallengeId = null
 );
 
 public record TokenResponse(
@@ -16,7 +19,13 @@ public record TokenResponse(
     string TokenType
 );
 
-public record RefreshTokenRequest(string RefreshToken);
+public record MfaVerifyRequest(string MfaChallengeId, string Code);
+
+public record MfaEnableRequest(string Code);
+
+public record MfaSetupDto(string Secret, string OtpAuthUri);
+
+public record RefreshTokenRequest(string? RefreshToken = null);
 
 public record ChangePasswordRequest(
     string CurrentPassword,
@@ -32,6 +41,10 @@ public record UserDto(
     string? LastName,
     bool IsActive,
     IEnumerable<string> Roles,
+    IEnumerable<string> Permissions,
+    bool MustChangePassword,
+    bool MfaEnabled,
+    bool MustSetupMfa,
     DateTime CreatedAt,
     DateTime? LastLoginAt
 );
@@ -42,7 +55,7 @@ public record CreateUserRequest(
     string Password,
     string? FirstName,
     string? LastName,
-    List<Guid> RoleIds
+    List<Guid>? RoleIds = null
 );
 
 public record UpdateUserRequest(

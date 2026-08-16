@@ -12,6 +12,9 @@ interface DashboardStats {
   totalUsers: number;
   keysByEnvironment: { environment: string; count: number }[];
   recentActivity: { action: string; resource: string; timestamp: Date; username: string }[];
+  expiringKeys30Days: number;
+  expiringCertificates30Days: number;
+  upcomingExpiries: { kind: string; id: string; name: string; expiresAt: Date; daysLeft: number }[];
 }
 
 @Component({
@@ -28,48 +31,17 @@ export class DashboardPageComponent implements OnInit {
 
   constructor(private http: HttpClient) {}
 
-  ngOnInit() {
-    this.loadDashboardStats();
-  }
+  ngOnInit() { this.loadDashboardStats(); }
 
   loadDashboardStats() {
     this.loading = true;
     this.error = null;
-    
-    // Mock data for now - replace with real API call
-    setTimeout(() => {
-      this.stats = {
-        totalKeys: 42,
-        activeKeys: 38,
-        expiredKeys: 2,
-        revokedKeys: 2,
-        totalCertificates: 5,
-        totalUsers: 12,
-        keysByEnvironment: [
-          { environment: 'DEV', count: 15 },
-          { environment: 'TEST', count: 10 },
-          { environment: 'UAT', count: 8 },
-          { environment: 'PROD', count: 9 }
-        ],
-        recentActivity: [
-          { action: 'Key Retrieved', resource: 'API_KEY_PROD', timestamp: new Date(Date.now() - 5 * 60000), username: 'john.doe' },
-          { action: 'Key Created', resource: 'DB_PASSWORD_DEV', timestamp: new Date(Date.now() - 15 * 60000), username: 'admin' },
-          { action: 'User Created', resource: 'jane.smith', timestamp: new Date(Date.now() - 30 * 60000), username: 'admin' },
-          { action: 'Certificate Uploaded', resource: 'Prod Cert 2026', timestamp: new Date(Date.now() - 60 * 60000), username: 'admin' },
-          { action: 'Key Rotated', resource: 'API_KEY_PROD', timestamp: new Date(Date.now() - 120 * 60000), username: 'admin' }
-        ]
-      };
-      this.loading = false;
-    }, 500);
-  }
-
-  getStatusColor(status: string): string {
-    const colors: Record<string, string> = {
-      'Active': 'green',
-      'Expired': 'orange',
-      'Revoked': 'red'
-    };
-    return colors[status] || 'gray';
+    this.http.get<any>(`${environment.apiUrl}/v1/metrics`).subscribe({
+      next: (res) => { this.stats = res.data; this.loading = false; },
+      error: (err) => {
+        this.error = err.error?.error?.message || 'Dashboard yüklenemedi';
+        this.loading = false;
+      }
+    });
   }
 }
-

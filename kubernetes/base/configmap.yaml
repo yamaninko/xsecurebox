@@ -26,13 +26,13 @@ data:
   # API Configuration
   ASPNETCORE_ENVIRONMENT: Production
   ASPNETCORE_URLS: http://+:5000
-  ENABLE_SWAGGER: "true"
+  ENABLE_SWAGGER: "false"
   DISABLE_HTTPS_REDIRECT: "true"
   
   # JWT Configuration
   JWT_ISSUER: SecureBoxAPI
-  JWT_AUDIENCE: SecureBoxClients
-  JWT_EXPIRY_MINUTES: "60"
+  JWT_AUDIENCE: SecureBoxPortal
+  JWT_EXPIRY_MINUTES: "15"
   
   # CORS
   CORS_ALLOWED_ORIGINS: http://localhost,https://securebox.example.com

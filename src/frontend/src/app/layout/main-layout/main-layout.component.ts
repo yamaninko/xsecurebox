@@ -37,7 +37,7 @@ export class MainLayoutComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.currentUser = this.authService.getCurrentUser();
+    this.authService.currentUser$.subscribe(user => this.currentUser = user);
   }
 
   toggleSidebar() {

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SecureBox.API.Security;
 using SecureBox.Core.DTOs;
 using SecureBox.Core.Interfaces;
 
@@ -57,7 +58,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var userId = Guid.Parse(User.FindFirst("sub")?.Value ?? throw new UnauthorizedAccessException());
+            var userId = User.GetUserId();
             var role = await _roleService.CreateRoleAsync(request, userId);
             return CreatedAtAction(nameof(GetRole), new { roleId = role.RoleId }, 
                 new { success = true, data = role, message = "Role created successfully" });
@@ -154,7 +155,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var userId = Guid.Parse(User.FindFirst("sub")?.Value ?? throw new UnauthorizedAccessException());
+            var userId = User.GetUserId();
             await _roleService.AssignPermissionToRoleAsync(roleId, permissionId, userId);
             return Ok(new { success = true, message = "Permission assigned successfully" });
         }

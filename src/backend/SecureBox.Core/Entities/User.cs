@@ -11,6 +11,9 @@ public class User
     public bool IsActive { get; set; } = true;
     public bool IsEmailVerified { get; set; } = false;
     public bool MustChangePassword { get; set; } = false;
+    public bool MfaEnabled { get; set; } = false;
+    public bool MustSetupMfa { get; set; } = false;
+    public byte[]? TotpSecretProtected { get; set; }
     public int FailedLoginAttempts { get; set; } = 0;
     public DateTime? LastLoginAt { get; set; }
     public DateTime? LockedOutUntil { get; set; }

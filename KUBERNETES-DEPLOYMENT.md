@@ -100,9 +100,9 @@ kubectl get nodes
 
 Secure Box Docker image'ları Harbor registry'de saklanır. Erişim için gerekli:
 
-- **GTECH_REPO_URL**: Harbor registry URL'i
-- **GTECH_REPO_USERNAME**: Harbor kullanıcı adı (robot account)
-- **GTECH_REPO_TOKEN**: Harbor access token
+- **REGISTRY_URL**: Harbor registry URL'i
+- **REGISTRY_USERNAME**: Harbor kullanıcı adı (robot account)
+- **REGISTRY_TOKEN**: Harbor access token
 
 ## 🚀 Hızlı Başlangıç
 
@@ -110,9 +110,9 @@ Secure Box Docker image'ları Harbor registry'de saklanır. Erişim için gerekl
 
 ```bash
 # 1. Harbor credentials'ları ayarla
-export GTECH_REPO_URL="harbor.example.com"
-export GTECH_REPO_USERNAME="robot\$securebox"
-export GTECH_REPO_TOKEN="your-token-here"
+export REGISTRY_URL="harbor.example.com"
+export REGISTRY_USERNAME="robot\$securebox"
+export REGISTRY_TOKEN="your-token-here"
 
 # 2. Deployment script'ini çalıştır
 ./scripts/deploy-to-k8s.sh
@@ -138,9 +138,9 @@ kubectl apply -f kubernetes/base/namespace.yaml
 
 # 2. Harbor registry secret oluştur
 kubectl create secret docker-registry harbor-registry-secret \
-  --docker-server=$GTECH_REPO_URL \
-  --docker-username=$GTECH_REPO_USERNAME \
-  --docker-password=$GTECH_REPO_TOKEN \
+  --docker-server=$REGISTRY_URL \
+  --docker-username=$REGISTRY_USERNAME \
+  --docker-password=$REGISTRY_TOKEN \
   --namespace=securebox
 
 # 3. ConfigMap ve Secrets
@@ -160,9 +160,9 @@ kubectl wait --for=condition=ready pod -l app=redis -n securebox --timeout=300s
 kubectl wait --for=condition=ready pod -l app=rabbitmq -n securebox --timeout=300s
 
 # 5. Application'ı deploy et
-# Not: ${GTECH_REPO_URL} placeholder'ını gerçek URL ile değiştirin
-sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/api-deployment.yaml
-sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/portal-deployment.yaml
+# Not: ${REGISTRY_URL} placeholder'ını gerçek URL ile değiştirin
+sed -i "s|\${REGISTRY_URL}|$REGISTRY_URL|g" kubernetes/base/api-deployment.yaml
+sed -i "s|\${REGISTRY_URL}|$REGISTRY_URL|g" kubernetes/base/portal-deployment.yaml
 
 kubectl apply -f kubernetes/base/api-deployment.yaml
 kubectl apply -f kubernetes/base/portal-deployment.yaml
@@ -190,7 +190,7 @@ kubectl port-forward -n securebox svc/nginx-service 8080:80
 
 **Default Credentials:**
 - Username: `admin`
-- Password: `Admin@123`
+- Password: `ADMIN_PASSWORD` environment variable
 
 ## 🔄 CI/CD Kurulumu
 
@@ -202,9 +202,9 @@ GitHub Repository → Settings → Secrets → Actions → New repository secret
 
 ```bash
 # Harbor Registry
-GTECH_REPO_URL          # örn: harbor.example.com
-GTECH_REPO_USERNAME     # örn: robot$securebox
-GTECH_REPO_TOKEN        # Harbor access token
+REGISTRY_URL          # örn: harbor.example.com
+REGISTRY_USERNAME     # örn: robot$securebox
+REGISTRY_TOKEN        # Harbor access token
 
 # Kubernetes
 KUBECONFIG              # Base64 encoded kubeconfig
@@ -366,7 +366,7 @@ kubectl describe pods -n securebox | grep -A 5 "Limits\|Requests"
 ```bash
 # Yeni image version'ı ile güncelle
 kubectl set image deployment/securebox-api \
-  api=$GTECH_REPO_URL/securebox/api:v1.2.0 \
+  api=$REGISTRY_URL/securebox/api:v1.2.0 \
   -n securebox
 
 # Rollout durumunu izle
@@ -437,9 +437,9 @@ kubectl get secret harbor-registry-secret -n securebox -o yaml
 # Secret'i yeniden oluştur
 kubectl delete secret harbor-registry-secret -n securebox
 kubectl create secret docker-registry harbor-registry-secret \
-  --docker-server=$GTECH_REPO_URL \
-  --docker-username=$GTECH_REPO_USERNAME \
-  --docker-password=$GTECH_REPO_TOKEN \
+  --docker-server=$REGISTRY_URL \
+  --docker-username=$REGISTRY_USERNAME \
+  --docker-password=$REGISTRY_TOKEN \
   --namespace=securebox
 ```
 

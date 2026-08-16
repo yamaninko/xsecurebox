@@ -183,6 +183,11 @@
       </div>
 
       <div class="form-group">
+        <label>Tags (virgülle)</label>
+        <input type="text" [(ngModel)]="newKey.tagText" name="tagText" class="form-input" placeholder="api, production">
+      </div>
+
+      <div class="form-group">
         <label>Key Value *</label>
         <input type="password" [(ngModel)]="newKey.value" name="value" required 
                placeholder="Enter the secret value" class="form-input">
@@ -204,8 +209,7 @@
           <label>Certificate *</label>
           <select [(ngModel)]="newKey.certificateId" name="certificateId" required class="form-input">
             <option value="">Select certificate...</option>
-            <option value="cert-1">Prod Cert 2025</option>
-            <option value="cert-2">Dev Cert 2025</option>
+            <option *ngFor="let cert of certificates" [value]="cert.certificateId">{{ cert.name }}</option>
           </select>
         </div>
       </div>
@@ -232,13 +236,13 @@
 <div class="modal-overlay" *ngIf="showRetrieveModal" (click)="closeRetrieveModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>🔐 Retrieve Key (Triple Authentication)</h2>
+      <h2>🔐 Retrieve Key</h2>
       <button class="btn-close" (click)="closeRetrieveModal()">✖</button>
     </div>
     
     <div class="auth-warning">
       <p><strong>⚠️ Security Notice</strong></p>
-      <p>This action requires triple authentication and will be logged.</p>
+      <p>This action requires password re-entry and will be logged.</p>
     </div>
 
     <div class="key-info-box">
@@ -256,7 +260,7 @@
 
       <div class="form-group">
         <label>Retrieval Reason</label>
-        <textarea placeholder="Why do you need this key?" 
+        <textarea [(ngModel)]="retrieveReason" name="reason" placeholder="Why do you need this key?"
                   class="form-input" rows="3"></textarea>
         <small class="form-hint">Optional but recommended for audit trail</small>
       </div>
@@ -264,7 +268,7 @@
       <div *ngIf="retrievedValue" class="retrieved-value-box">
         <h4>Retrieved Value:</h4>
         <code>{{ retrievedValue }}</code>
-        <button type="button" class="btn btn-sm btn-secondary">
+        <button type="button" class="btn btn-sm btn-secondary" (click)="copyRetrievedValue()">
           📋 Copy to Clipboard
         </button>
       </div>
@@ -278,6 +282,22 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="rotateTarget" (click)="rotateTarget = null">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>Rotate {{ rotateTarget.name }}</h2>
+    <label>Yeni değer <input type="password" [(ngModel)]="rotateValue" name="rotateValue"></label>
+    <button class="btn btn-primary" type="button" (click)="confirmRotate()">Kaydet</button>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="revokeTarget" (click)="revokeTarget = null">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>Revoke {{ revokeTarget.name }}</h2>
+    <label>Neden <input [(ngModel)]="revokeReason" name="revokeReason"></label>
+    <button class="btn btn-danger" type="button" (click)="confirmRevoke()">İptal et</button>
   </div>
 </div>
 

@@ -4,11 +4,17 @@ namespace SecureBox.Core.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResponse> LoginAsync(LoginRequest request);
-    Task<TokenResponse> RefreshTokenAsync(string refreshToken);
-    Task LogoutAsync(Guid userId, string? refreshToken = null);
+    Task<LoginOutcome> LoginAsync(LoginRequest request);
+    Task<AuthSession> VerifyMfaAsync(string challengeId, string code);
+    Task<MfaSetupDto> BeginMfaSetupAsync(Guid userId);
+    Task EnableMfaAsync(Guid userId, string code);
+    Task<AuthSession> RefreshTokenAsync(string refreshToken);
+    Task LogoutAsync(Guid userId, string? refreshToken = null, string? accessToken = null);
     Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
+    Task<bool> VerifyPasswordAsync(Guid userId, string password);
 }
+
+public record LoginOutcome(bool RequiresMfa, string? MfaChallengeId, AuthSession? Session);
 
 public interface IUserService
 {
@@ -49,11 +55,11 @@ public interface IKeyService
     Task<IEnumerable<KeyDto>> GetAllKeysAsync(KeyQueryParams queryParams, Guid userId, bool isAdmin);
     Task<KeyDto?> GetKeyByIdAsync(Guid keyId, Guid userId, bool isAdmin);
     Task<KeyDto> CreateKeyAsync(CreateKeyRequest request, Guid createdBy);
-    Task<RetrieveKeyResponse> RetrieveKeyAsync(Guid keyId, Guid userId, string? reason);
-    Task<KeyDto> UpdateKeyAsync(Guid keyId, UpdateKeyRequest request);
+    Task<RetrieveKeyResponse> RetrieveKeyAsync(Guid keyId, Guid userId, string? reason, string? password, bool passwordRequired, string? ipAddress, string? userAgent, string accessMethod = "Portal");
+    Task<KeyDto> UpdateKeyAsync(Guid keyId, UpdateKeyRequest request, Guid userId, bool isAdmin);
     Task<KeyDto> RotateKeyAsync(Guid keyId, string newValue, string? reason, Guid userId);
     Task RevokeKeyAsync(Guid keyId, string reason, Guid revokedBy);
-    Task DeleteKeyAsync(Guid keyId);
+    Task DeleteKeyAsync(Guid keyId, Guid userId, bool isAdmin);
 }
 
 public interface IEncryptionService
@@ -66,8 +72,13 @@ public interface IEncryptionService
 public interface IAuditService
 {
     Task LogAuditTrailAsync(AuditTrailDto auditTrail);
-    Task<IEnumerable<AuditTrailDto>> GetAuditTrailsAsync(AuditQueryParams queryParams);
+    Task<IEnumerable<AuditTrailListDto>> GetAuditTrailsAsync(AuditQueryParams queryParams);
     Task<IEnumerable<KeyAccessLogDto>> GetKeyAccessLogsAsync(Guid keyId, Guid? userId);
+}
+
+public interface IMetricsService
+{
+    Task<DashboardStatsDto> GetDashboardStatsAsync(Guid userId, bool isAdmin);
 }
 
 public interface IMessageBrokerService

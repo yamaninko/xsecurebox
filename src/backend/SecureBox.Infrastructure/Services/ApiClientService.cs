@@ -36,11 +36,14 @@ public class ApiClientService : IApiClientService
         _dbContext = dbContext;
         _logger = logger;
 
-        var jwtKey = configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
+        var jwtSection = configuration.GetSection("JwtSettings");
+        var jwtKey = jwtSection["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
         _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-        _issuer = configuration["Jwt:Issuer"] ?? "SecureBox";
-        _audience = configuration["Jwt:Audience"] ?? "SecureBoxAPI";
-        _accessTokenExpirationMinutes = int.Parse(configuration["Jwt:AccessTokenExpirationMinutes"] ?? "60");
+        _issuer = jwtSection["Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
+        _audience = jwtSection["Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
+        _accessTokenExpirationMinutes = int.TryParse(jwtSection["AccessTokenExpirationMinutes"], out var minutes)
+            ? minutes
+            : 15;
     }
 
     public async Task<IEnumerable<ApiClientDto>> GetAllClientsAsync()
@@ -210,8 +213,11 @@ public class ApiClientService : IApiClientService
         var claims = new List<Claim>
         {
             new Claim("client_id", client.ClientIdString),
-            new Claim("sub", client.ClientId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Sub, client.ClientId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new Claim("token_type", "access"),
+            new Claim(ClaimTypes.Role, "Service"),
+            new Claim("role", "Service")
         };
 
         foreach (var scopeItem in grantedScopes)

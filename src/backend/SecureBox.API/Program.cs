@@ -2,21 +2,23 @@ using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SecureBox.API.Authorization;
 using SecureBox.API.Middleware;
 using SecureBox.Core.Interfaces;
 using SecureBox.Core.Validators;
 using SecureBox.Infrastructure.Data;
 using SecureBox.Infrastructure.Services;
 using Serilog;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -26,15 +28,14 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Add services to the container
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
         {
             var errors = context.ModelState
-                .Where(e => e.Value.Errors.Count > 0)
-                .SelectMany(x => x.Value.Errors.Select(e => new ValidationErrorDetail
+                .Where(e => e.Value!.Errors.Count > 0)
+                .SelectMany(x => x.Value!.Errors.Select(e => new ValidationErrorDetail
                 {
                     Field = x.Key,
                     Message = e.ErrorMessage
@@ -59,8 +60,8 @@ builder.Services.AddFluentValidationAutoValidation()
                 .AddFluentValidationClientsideAdapters();
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
 
-// Swagger/OpenAPI
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -95,7 +96,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Database - PostgreSQL
 builder.Services.AddDbContext<SecureBoxDbContext>(options =>
 {
     if (!builder.Environment.IsEnvironment("Testing"))
@@ -104,16 +104,48 @@ builder.Services.AddDbContext<SecureBoxDbContext>(options =>
     }
 });
 
-// Redis Cache
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "SecureBox_";
-});
+var isTesting = builder.Environment.IsEnvironment("Testing");
+var redisConnection = builder.Configuration.GetConnectionString("Redis");
+IConnectionMultiplexer? redisMux = null;
 
-// JWT Authentication
+if (!isTesting && !string.IsNullOrWhiteSpace(redisConnection))
+{
+    try
+    {
+        redisMux = ConnectionMultiplexer.Connect(redisConnection);
+        builder.Services.AddSingleton<IConnectionMultiplexer>(redisMux);
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnection;
+            options.InstanceName = "SecureBox_";
+        });
+        builder.Services.AddSingleton<ITokenStore, RedisTokenStore>();
+        builder.Services.AddSingleton<IRateLimitService, RedisRateLimitService>();
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Redis unavailable; falling back to in-memory token and rate-limit stores");
+        redisMux = null;
+    }
+}
+
+if (redisMux is null)
+{
+    builder.Services.AddDistributedMemoryCache();
+    builder.Services.AddSingleton<ITokenStore, MemoryTokenStore>();
+    builder.Services.AddSingleton<IRateLimitService, MemoryRateLimitService>();
+}
+
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+var secretKey = jwtSettings["SecretKey"];
+if (string.IsNullOrWhiteSpace(secretKey) && !isTesting)
+{
+    throw new InvalidOperationException("JwtSettings:SecretKey is required (set JWT_SECRET_KEY)");
+}
+
+secretKey ??= "YourSuperSecretKeyMinimum32CharactersLongForHS256!";
+
+SecureBox.API.Security.StartupSecrets.Validate(builder.Environment, builder.Configuration);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -122,6 +154,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.MapInboundClaims = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -131,13 +164,46 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName,
+        RoleClaimType = "role"
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var tokenType = context.Principal?.FindFirst("token_type")?.Value;
+            if (!string.Equals(tokenType, "access", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Fail("Refresh tokens cannot be used as access tokens");
+                return;
+            }
+
+            var jti = context.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+            if (string.IsNullOrWhiteSpace(jti))
+            {
+                return;
+            }
+
+            var store = context.HttpContext.RequestServices.GetRequiredService<ITokenStore>();
+            if (await store.IsAccessTokenBlacklistedAsync(jti))
+            {
+                context.Fail("Token has been revoked");
+            }
+        }
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+builder.Services.AddAuthorization(options =>
+{
+    foreach (var permission in PermissionPolicies.All)
+    {
+        options.AddPolicy(permission, policy =>
+            policy.Requirements.Add(new PermissionRequirement(permission)));
+    }
+});
 
-// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowPortal", policy =>
@@ -149,7 +215,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -158,20 +223,35 @@ builder.Services.AddScoped<IKeyService, KeyService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IApiClientService, ApiClientService>();
-builder.Services.AddSingleton<IMessageBrokerService, RabbitMQService>();
+builder.Services.AddScoped<IMetricsService, MetricsService>();
+builder.Services.AddScoped<ILifecycleService, LifecycleService>();
+if (!isTesting)
+{
+    builder.Services.AddHostedService<SecureBox.API.Hosted.LifecycleHostedService>();
+}
 
-// Health Checks
-builder.Services.AddHealthChecks()
-    // Minimal health check that always reports healthy; replace with DB/Redis checks when packages are added
-    .AddCheck("self", () => HealthCheckResult.Healthy());
+builder.Services.AddSingleton<SecureBox.API.Health.PostgresHealthCheck>();
+var healthChecks = builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" });
+
+if (!isTesting)
+{
+    healthChecks.AddCheck<SecureBox.API.Health.PostgresHealthCheck>("postgres", tags: new[] { "ready" });
+
+    if (redisMux is not null)
+    {
+        var mux = redisMux;
+        healthChecks.AddCheck("redis", () =>
+            mux.IsConnected ? HealthCheckResult.Healthy() : HealthCheckResult.Unhealthy("Redis disconnected"),
+            tags: new[] { "ready" });
+    }
+}
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
-// Enable Swagger in Development or when explicitly toggled via config/env (EnableSwagger=true)
 var enableSwagger = app.Environment.IsDevelopment() ||
-                    (builder.Configuration.GetValue<bool>("EnableSwagger"));
-if (enableSwagger)
+                    builder.Configuration.GetValue<bool>("EnableSwagger");
+if (enableSwagger && !app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -180,13 +260,16 @@ if (enableSwagger)
     });
 }
 
-// Respect reverse proxy headers (X-Forwarded-For/Proto) when behind Nginx
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+var forwarded = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    RequireHeaderSymmetry = false,
+    ForwardLimit = 2
+};
+forwarded.KnownNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
-// Allow disabling HTTPS redirection for local/dev via config/env (DisableHttpsRedirect=true)
 var disableHttpsRedirect = builder.Configuration.GetValue<bool>("DisableHttpsRedirect");
 if (!disableHttpsRedirect)
 {
@@ -194,13 +277,19 @@ if (!disableHttpsRedirect)
 }
 
 app.UseCors("AllowPortal");
-
 app.UseMiddleware<ExceptionMiddleware>();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live")
+});
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("ready") || r.Tags.Contains("live")
+});
 app.MapHealthChecks("/health");
 
 try

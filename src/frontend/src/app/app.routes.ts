@@ -13,10 +13,10 @@ export const routes: Routes = [
       { path: 'dashboard', loadChildren: () => import('./features/dashboard/dashboard.module').then(m => m.DashboardModule) },
       { path: 'keys', loadChildren: () => import('./features/keys/keys.module').then(m => m.KeysModule) },
       { path: 'certificates', loadChildren: () => import('./features/certificates/certificates.module').then(m => m.CertificatesModule) },
-      { path: 'users', loadChildren: () => import('./features/users/users.module').then(m => m.UsersModule) },
-      { path: 'roles', loadChildren: () => import('./features/roles/roles.module').then(m => m.RolesModule) },
-      { path: 'api-clients', loadChildren: () => import('./features/api-clients/api-clients.module').then(m => m.ApiClientsModule) },
-      { path: 'audit', loadChildren: () => import('./features/audit/audit.module').then(m => m.AuditModule) }
+      { path: 'users', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/users/users.module').then(m => m.UsersModule) },
+      { path: 'roles', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/roles/roles.module').then(m => m.RolesModule) },
+      { path: 'api-clients', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/api-clients/api-clients.module').then(m => m.ApiClientsModule) },
+      { path: 'audit', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/audit/audit.module').then(m => m.AuditModule) }
     ]
   },
   {

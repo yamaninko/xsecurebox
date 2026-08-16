@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS "Users" (
     "IsActive" BOOLEAN DEFAULT TRUE NOT NULL,
     "IsEmailVerified" BOOLEAN DEFAULT FALSE NOT NULL,
     "MustChangePassword" BOOLEAN DEFAULT FALSE NOT NULL,
+    "MfaEnabled" BOOLEAN DEFAULT FALSE NOT NULL,
+    "MustSetupMfa" BOOLEAN DEFAULT TRUE NOT NULL,
+    "TotpSecretProtected" BYTEA,
     "FailedLoginAttempts" INT DEFAULT 0 NOT NULL,
     "LastLoginAt" TIMESTAMP WITH TIME ZONE,
     "LockedOutUntil" TIMESTAMP WITH TIME ZONE,
@@ -151,9 +154,14 @@ CREATE TABLE IF NOT EXISTS "Keys" (
     "EncryptedValue" BYTEA NOT NULL,
     "EncryptionIV" BYTEA NOT NULL,
     "EncryptionTag" BYTEA NOT NULL,
+    "EncryptionAlgorithm" VARCHAR(50) DEFAULT 'AES256' NOT NULL,
     "CertificateId" UUID NOT NULL,
+    "EnvironmentTag" VARCHAR(20) DEFAULT 'DEV' NOT NULL,
+    "Tags" TEXT,
     "Version" INT DEFAULT 1 NOT NULL,
     "Status" VARCHAR(20) DEFAULT 'Active' NOT NULL,
+    "ValidFrom" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "ValidTo" TIMESTAMP WITH TIME ZONE,
     "ExpiresAt" TIMESTAMP WITH TIME ZONE,
     "OwnerUserId" UUID NOT NULL,
     "CreatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -191,7 +199,7 @@ CREATE TABLE IF NOT EXISTS "KeyAccessLogs" (
     "AccessedBy" UUID NOT NULL,
     "AccessedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "AccessMethod" VARCHAR(50) NOT NULL,
-    "IPAddress" INET,
+    "IPAddress" VARCHAR(64),
     "UserAgent" VARCHAR(500),
     "IsSuccessful" BOOLEAN NOT NULL,
     "FailureReason" VARCHAR(500),
@@ -231,7 +239,7 @@ CREATE TABLE IF NOT EXISTS "AuditTrails" (
     "Action" VARCHAR(100) NOT NULL,
     "Resource" VARCHAR(50) NOT NULL,
     "ResourceId" UUID,
-    "Details" JSONB,
+    "Details" TEXT,
     "IPAddress" INET,
     "UserAgent" VARCHAR(500),
     "Timestamp" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -343,29 +351,7 @@ WHERE r."RoleName" = 'Service'
   AND p."PermissionName" IN ('Key.Retrieve', 'Key.Read', 'Certificate.Read')
 ON CONFLICT ("RoleId", "PermissionId") DO NOTHING;
 
--- Create default admin user
--- Password: Admin@123 (BCrypt hashed with cost 12)
-INSERT INTO "Users" ("UserId", "Username", "Email", "PasswordHash", "FirstName", "LastName", "IsActive", "IsEmailVerified")
-VALUES (
-    '00000000-0000-0000-0000-000000000001'::UUID,
-    'admin',
-    'admin@securebox.local',
-    '$2a$12$LQKYm3YBkfZq3V5x2X9xV.NZp6QxJQR8gLYJQ3K6nPqE2wL3WxK/W',
-    'System',
-    'Administrator',
-    TRUE,
-    TRUE
-)
-ON CONFLICT ("Username") DO NOTHING;
-
--- Assign Admin role to admin user
-INSERT INTO "UserRoles" ("UserId", "RoleId")
-SELECT 
-    '00000000-0000-0000-0000-000000000001'::UUID,
-    r."RoleId"
-FROM "Roles" r
-WHERE r."RoleName" = 'Admin'
-ON CONFLICT ("UserId", "RoleId") DO NOTHING;
+-- Admin user is created by the API from ADMIN_PASSWORD / Database__DefaultAdminPassword.
 
 -- ============================================
 -- VIEWS

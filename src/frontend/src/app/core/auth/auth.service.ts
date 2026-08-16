@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, tap, catchError, switchMap, map } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
@@ -10,11 +10,12 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
   expiresIn: number;
   tokenType: string;
-  user: User;
+  user?: User;
+  requiresMfa?: boolean;
+  mfaChallengeId?: string;
 }
 
 export interface User {
@@ -24,6 +25,10 @@ export interface User {
   firstName?: string;
   lastName?: string;
   roles: string[];
+  permissions: string[];
+  mustChangePassword: boolean;
+  mfaEnabled?: boolean;
+  mustSetupMfa?: boolean;
 }
 
 @Injectable({
@@ -31,56 +36,104 @@ export interface User {
 })
 export class AuthService {
   private readonly API_URL = `${environment.apiUrl}/v1/auth`;
+  private accessToken: string | null = null;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(
     private http: HttpClient,
     private router: Router
-  ) {
-    this.loadCurrentUser();
+  ) {}
+
+  getAccessToken(): string | null {
+    return this.accessToken;
   }
 
   login(username: string, password: string): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/login`, { username, password })
+    return this.http.post<any>(`${this.API_URL}/login`, { username, password }, { withCredentials: true })
       .pipe(
         tap(response => {
-          if (response.success && response.data) {
+          if (response.success && response.data?.accessToken && !response.data.requiresMfa) {
             this.setSession(response.data);
-            this.currentUserSubject.next(response.data.user);
           }
         })
       );
   }
 
   logout(): void {
-    const refreshToken = localStorage.getItem('refresh_token');
-    this.http.post(`${this.API_URL}/logout`, { refreshToken }).subscribe();
-    
+    this.http.post(`${this.API_URL}/logout`, {}, { withCredentials: true }).subscribe({
+      error: () => undefined
+    });
     this.clearSession();
-    this.currentUserSubject.next(null);
     this.router.navigate(['/auth/login']);
   }
 
   refreshToken(): Observable<any> {
-    const refreshToken = localStorage.getItem('refresh_token');
-    return this.http.post<any>(`${this.API_URL}/refresh`, { refreshToken })
+    return this.http.post<any>(`${this.API_URL}/refresh`, {}, { withCredentials: true })
       .pipe(
         tap(response => {
-          if (response.success && response.data) {
-            localStorage.setItem('access_token', response.data.accessToken);
+          if (response.success && response.data?.accessToken) {
+            this.accessToken = response.data.accessToken;
           }
         })
       );
   }
 
+  restoreSession(): Observable<boolean> {
+    return this.refreshToken().pipe(
+      switchMap(() => this.http.get<any>(`${this.API_URL}/me`, { withCredentials: true })),
+      tap(response => {
+        if (response.success && response.data) {
+          this.currentUserSubject.next(response.data);
+        }
+      }),
+      map(() => true),
+      catchError(() => {
+        this.clearSession();
+        return of(false);
+      })
+    );
+  }
+
+  verifyMfa(mfaChallengeId: string, code: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/mfa/verify`, { mfaChallengeId, code }, { withCredentials: true })
+      .pipe(tap(response => {
+        if (response.success && response.data?.accessToken) {
+          this.setSession(response.data);
+        }
+      }));
+  }
+
+  setupMfa(): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/mfa/setup`, {}, { withCredentials: true });
+  }
+
+  enableMfa(code: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/mfa/enable`, { code }, { withCredentials: true });
+  }
+
+  mustSetupMfa(): boolean {
+    return this.currentUserSubject.value?.mustSetupMfa === true && !this.currentUserSubject.value?.mfaEnabled;
+  }
+
+  changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/change-password`, {
+      currentPassword,
+      newPassword,
+      confirmPassword
+    }, { withCredentials: true });
+  }
+
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('access_token');
-    return !!token && !this.isTokenExpired(token);
+    return !!this.accessToken && !this.isTokenExpired(this.accessToken);
   }
 
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
+  }
+
+  mustChangePassword(): boolean {
+    return this.currentUserSubject.value?.mustChangePassword === true;
   }
 
   hasRole(role: string): boolean {
@@ -89,42 +142,29 @@ export class AuthService {
   }
 
   hasPermission(permission: string): boolean {
-    // TODO: Implement permission check logic
-    return true;
+    const user = this.currentUserSubject.value;
+    if (user?.roles?.includes('Admin')) {
+      return true;
+    }
+    return user?.permissions?.includes(permission) ?? false;
   }
 
   private setSession(authResult: AuthResponse): void {
-    localStorage.setItem('access_token', authResult.accessToken);
-    localStorage.setItem('refresh_token', authResult.refreshToken);
-    localStorage.setItem('user', JSON.stringify(authResult.user));
+    this.accessToken = authResult.accessToken || null;
+    this.currentUserSubject.next(authResult.user || null);
   }
 
   private clearSession(): void {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-  }
-
-  private loadCurrentUser(): void {
-    const userJson = localStorage.getItem('user');
-    if (userJson) {
-      try {
-        const user = JSON.parse(userJson);
-        this.currentUserSubject.next(user);
-      } catch (e) {
-        this.clearSession();
-      }
-    }
+    this.accessToken = null;
+    this.currentUserSubject.next(null);
   }
 
   private isTokenExpired(token: string): boolean {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const expiryTime = payload.exp * 1000;
-      return Date.now() >= expiryTime;
+      return Date.now() >= payload.exp * 1000;
     } catch {
       return true;
     }
   }
 }
-

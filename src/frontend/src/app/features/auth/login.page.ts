@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -20,6 +20,7 @@ import { AuthService } from '../../core/auth/auth.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -34,23 +35,25 @@ export class LoginPageComponent implements OnInit {
   loginForm!: FormGroup;
   isLoading = false;
   hidePassword = true;
+  mfaChallengeId: string | null = null;
+  mfaCode = '';
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
-    // Check for saved credentials
+    localStorage.removeItem('saved_password');
     const savedUsername = localStorage.getItem('saved_username');
-    const savedPassword = localStorage.getItem('saved_password');
     const rememberMe = localStorage.getItem('remember_me') === 'true';
 
     this.loginForm = this.fb.group({
       username: [savedUsername || '', [Validators.required, Validators.minLength(3)]],
-      password: [savedPassword || '', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
       rememberMe: [rememberMe]
     });
   }
@@ -67,7 +70,6 @@ export class LoginPageComponent implements OnInit {
     // Save credentials if "Remember Me" is checked
     if (rememberMe) {
       localStorage.setItem('saved_username', username);
-      localStorage.setItem('saved_password', password);
       localStorage.setItem('remember_me', 'true');
     } else {
       localStorage.removeItem('saved_username');
@@ -78,13 +80,11 @@ export class LoginPageComponent implements OnInit {
     this.authService.login(username, password).subscribe({
       next: (response) => {
         this.isLoading = false;
-        if (response.success) {
-          this.snackBar.open('Giriş başarılı!', 'Kapat', {
-            duration: 3000,
-            horizontalPosition: 'end',
-            verticalPosition: 'top'
-          });
-          this.router.navigate(['/dashboard']);
+        if (response.success && response.data?.requiresMfa) {
+          this.mfaChallengeId = response.data.mfaChallengeId;
+          this.snackBar.open('MFA kodunu girin', 'Kapat', { duration: 3000 });
+        } else if (response.success) {
+          this.afterLogin(response.data?.user);
         } else {
           this.showError(response.message || 'Giriş başarısız');
         }
@@ -95,6 +95,39 @@ export class LoginPageComponent implements OnInit {
         this.showError(errorMessage);
       }
     });
+  }
+
+  submitMfa(): void {
+    if (!this.mfaChallengeId || this.mfaCode.length < 6) {
+      return;
+    }
+    this.isLoading = true;
+    this.authService.verifyMfa(this.mfaChallengeId, this.mfaCode).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        if (response.success) {
+          this.afterLogin(response.data?.user);
+        } else {
+          this.showError('MFA doğrulanamadı');
+        }
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.showError(error.error?.error?.message || 'MFA doğrulanamadı');
+      }
+    });
+  }
+
+  private afterLogin(user: { mustChangePassword?: boolean; mustSetupMfa?: boolean } | undefined): void {
+    this.snackBar.open('Giriş başarılı!', 'Kapat', { duration: 3000, horizontalPosition: 'end', verticalPosition: 'top' });
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (user?.mustChangePassword) {
+      this.router.navigate(['/auth/change-password']);
+    } else if (user?.mustSetupMfa) {
+      this.router.navigate(['/auth/mfa-setup']);
+    } else {
+      this.router.navigateByUrl(returnUrl || '/dashboard');
+    }
   }
 
   private showError(message: string): void {

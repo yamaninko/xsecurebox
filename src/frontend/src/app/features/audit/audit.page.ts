@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../core/services/notification.service';
+import { AuditService } from '../../core/services/audit.service';
 
 interface AuditLog {
   auditLogId: string;
@@ -27,163 +28,66 @@ interface AuditLog {
 export class AuditPageComponent implements OnInit {
   auditLogs: AuditLog[] = [];
   filteredLogs: AuditLog[] = [];
-  
-  // Filters
   searchTerm = '';
   selectedAction = '';
   selectedResource = '';
   selectedStatus = '';
   dateFrom = '';
   dateTo = '';
-  
-  // Pagination
   currentPage = 1;
   pageSize = 20;
   totalPages = 1;
-  
-  // Unique values for filters
   uniqueActions: string[] = [];
   uniqueResources: string[] = [];
   statuses = ['Success', 'Failed', 'Warning'];
 
-  constructor(private notificationService: NotificationService) {}
+  constructor(
+    private notificationService: NotificationService,
+    private auditService: AuditService
+  ) {}
 
   ngOnInit() {
     this.loadAuditLogs();
   }
 
   loadAuditLogs() {
-    // Mock data - Replace with actual API call
-    const mockLogs: AuditLog[] = [
-      {
-        auditLogId: '1',
-        action: 'LOGIN',
-        resource: 'Auth',
-        username: 'admin',
-        userId: '1',
-        ipAddress: '192.168.1.100',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        status: 'Success',
-        details: 'User logged in successfully',
-        timestamp: new Date(Date.now() - 1000 * 60 * 5)
+    this.auditService.getTrails({ pageSize: '100' }).subscribe({
+      next: (res) => {
+        this.auditLogs = (res.data || []).map((row: any) => ({
+          auditLogId: row.auditId,
+          action: row.action,
+          resource: row.resource,
+          resourceId: row.resourceId,
+          username: row.username,
+          userId: row.userId,
+          ipAddress: row.ipAddress || '',
+          userAgent: row.userAgent,
+          status: row.severity === 'Critical' ? 'Failed' : row.severity === 'Warning' ? 'Warning' : 'Success',
+          details: row.details,
+          timestamp: row.timestamp
+        }));
+        this.uniqueActions = [...new Set(this.auditLogs.map(log => log.action))];
+        this.uniqueResources = [...new Set(this.auditLogs.map(log => log.resource))];
+        this.applyFilters();
       },
-      {
-        auditLogId: '2',
-        action: 'CREATE_KEY',
-        resource: 'Key',
-        resourceId: 'key-123',
-        username: 'admin',
-        userId: '1',
-        ipAddress: '192.168.1.100',
-        status: 'Success',
-        details: 'Created new API key: production-key',
-        timestamp: new Date(Date.now() - 1000 * 60 * 15)
-      },
-      {
-        auditLogId: '3',
-        action: 'RETRIEVE_KEY',
-        resource: 'Key',
-        resourceId: 'key-123',
-        username: 'admin',
-        userId: '1',
-        ipAddress: '192.168.1.100',
-        status: 'Success',
-        details: 'Retrieved key value',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30)
-      },
-      {
-        auditLogId: '4',
-        action: 'LOGIN',
-        resource: 'Auth',
-        username: 'user1',
-        userId: '2',
-        ipAddress: '192.168.1.101',
-        status: 'Failed',
-        details: 'Invalid password',
-        timestamp: new Date(Date.now() - 1000 * 60 * 45)
-      },
-      {
-        auditLogId: '5',
-        action: 'UPLOAD_CERTIFICATE',
-        resource: 'Certificate',
-        resourceId: 'cert-456',
-        username: 'admin',
-        userId: '1',
-        ipAddress: '192.168.1.100',
-        status: 'Success',
-        details: 'Uploaded certificate: production-cert.pem',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60)
-      },
-      {
-        auditLogId: '6',
-        action: 'DELETE_USER',
-        resource: 'User',
-        resourceId: 'user-789',
-        username: 'admin',
-        userId: '1',
-        ipAddress: '192.168.1.100',
-        status: 'Warning',
-        details: 'Deleted user: test-user',
-        timestamp: new Date(Date.now() - 1000 * 60 * 90)
-      },
-      {
-        auditLogId: '7',
-        action: 'UPDATE_ROLE',
-        resource: 'Role',
-        resourceId: 'role-111',
-        username: 'admin',
-        userId: '1',
-        ipAddress: '192.168.1.100',
-        status: 'Success',
-        details: 'Updated role permissions',
-        timestamp: new Date(Date.now() - 1000 * 60 * 120)
-      },
-      {
-        auditLogId: '8',
-        action: 'REVOKE_KEY',
-        resource: 'Key',
-        resourceId: 'key-222',
-        username: 'admin',
-        userId: '1',
-        ipAddress: '192.168.1.100',
-        status: 'Success',
-        details: 'Revoked key: old-api-key',
-        timestamp: new Date(Date.now() - 1000 * 60 * 180)
-      }
-    ];
-    
-    this.auditLogs = mockLogs;
-    this.filteredLogs = [...mockLogs];
-    
-    // Extract unique values for filters
-    this.uniqueActions = [...new Set(mockLogs.map(log => log.action))];
-    this.uniqueResources = [...new Set(mockLogs.map(log => log.resource))];
-    
-    this.updatePagination();
+      error: () => this.notificationService.error('Hata', 'Audit kayıtları yüklenemedi')
+    });
   }
 
   applyFilters() {
     this.filteredLogs = this.auditLogs.filter(log => {
-      const matchesSearch = !this.searchTerm || 
+      const matchesSearch = !this.searchTerm ||
         log.username.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         log.action.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         log.details?.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
       const matchesAction = !this.selectedAction || log.action === this.selectedAction;
       const matchesResource = !this.selectedResource || log.resource === this.selectedResource;
       const matchesStatus = !this.selectedStatus || log.status === this.selectedStatus;
-      
       let matchesDate = true;
-      if (this.dateFrom) {
-        matchesDate = matchesDate && new Date(log.timestamp) >= new Date(this.dateFrom);
-      }
-      if (this.dateTo) {
-        matchesDate = matchesDate && new Date(log.timestamp) <= new Date(this.dateTo);
-      }
-      
+      if (this.dateFrom) matchesDate = matchesDate && new Date(log.timestamp) >= new Date(this.dateFrom);
+      if (this.dateTo) matchesDate = matchesDate && new Date(log.timestamp) <= new Date(this.dateTo);
       return matchesSearch && matchesAction && matchesResource && matchesStatus && matchesDate;
     });
-    
     this.currentPage = 1;
     this.updatePagination();
   }
@@ -201,26 +105,16 @@ export class AuditPageComponent implements OnInit {
   }
 
   updatePagination() {
-    this.totalPages = Math.ceil(this.filteredLogs.length / this.pageSize);
+    this.totalPages = Math.max(1, Math.ceil(this.filteredLogs.length / this.pageSize));
   }
 
   get paginatedLogs(): AuditLog[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    const end = start + this.pageSize;
-    return this.filteredLogs.slice(start, end);
+    return this.filteredLogs.slice(start, start + this.pageSize);
   }
 
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-    }
-  }
-
-  previousPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-    }
-  }
+  nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; }
+  previousPage() { if (this.currentPage > 1) this.currentPage--; }
 
   getStatusClass(status: string): string {
     switch (status) {
@@ -233,34 +127,30 @@ export class AuditPageComponent implements OnInit {
 
   getActionIcon(action: string): string {
     if (action.includes('LOGIN')) return '🔐';
-    if (action.includes('CREATE')) return '➕';
+    if (action.includes('CREATE') || action.includes('Create')) return '➕';
     if (action.includes('UPDATE')) return '✏️';
-    if (action.includes('DELETE')) return '🗑️';
-    if (action.includes('RETRIEVE')) return '👁️';
-    if (action.includes('REVOKE')) return '🚫';
-    if (action.includes('UPLOAD')) return '📤';
+    if (action.includes('DELETE') || action.includes('Delete')) return '🗑️';
+    if (action.includes('Retrieve')) return '👁️';
+    if (action.includes('Revoke')) return '🚫';
+    if (action.includes('Upload')) return '📤';
     return '📋';
   }
 
   exportLogs() {
-    // TODO: Implement export functionality
-    console.log('Exporting audit logs...');
-    this.notificationService.info(
-      'Yakında Gelecek',
-      'Export özelliği şu anda geliştirme aşamasındadır.'
-    );
+    const header = 'timestamp,action,resource,username,status,details\n';
+    const rows = this.filteredLogs.map(l =>
+      `${l.timestamp},${l.action},${l.resource},${l.username},${l.status},"${(l.details || '').replace(/"/g, '""')}"`
+    ).join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'audit-logs.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
-  getSuccessCount(): number {
-    return this.filteredLogs.filter(log => log.status === 'Success').length;
-  }
-
-  getFailedCount(): number {
-    return this.filteredLogs.filter(log => log.status === 'Failed').length;
-  }
-
-  getWarningCount(): number {
-    return this.filteredLogs.filter(log => log.status === 'Warning').length;
-  }
+  getSuccessCount(): number { return this.filteredLogs.filter(log => log.status === 'Success').length; }
+  getFailedCount(): number { return this.filteredLogs.filter(log => log.status === 'Failed').length; }
+  getWarningCount(): number { return this.filteredLogs.filter(log => log.status === 'Warning').length; }
 }
-

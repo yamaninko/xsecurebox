@@ -38,8 +38,8 @@ kubernetes/
    ```
 
 3. **Harbor Registry Credentials**
-   - `GTECH_REPO_URL`: Harbor registry URL'i
-   - `GTECH_REPO_TOKEN`: Harbor access token
+   - `REGISTRY_URL`: Harbor registry URL'i
+   - `REGISTRY_TOKEN`: Harbor access token
 
 ### 1. Namespace Oluşturma
 
@@ -51,9 +51,9 @@ kubectl apply -f kubernetes/base/namespace.yaml
 
 ```bash
 kubectl create secret docker-registry harbor-registry-secret \
-  --docker-server=${GTECH_REPO_URL} \
-  --docker-username=${GTECH_REPO_USERNAME} \
-  --docker-password=${GTECH_REPO_TOKEN} \
+  --docker-server=${REGISTRY_URL} \
+  --docker-username=${REGISTRY_USERNAME} \
+  --docker-password=${REGISTRY_TOKEN} \
   --namespace=securebox
 ```
 
@@ -172,12 +172,12 @@ kubectl describe hpa securebox-api-hpa -n securebox
 ```bash
 # API image'ını güncelle
 kubectl set image deployment/securebox-api \
-  api=${GTECH_REPO_URL}/securebox/api:v1.2.0 \
+  api=${REGISTRY_URL}/securebox/api:v1.2.0 \
   -n securebox
 
 # Portal image'ını güncelle
 kubectl set image deployment/securebox-portal \
-  portal=${GTECH_REPO_URL}/securebox/portal:v1.2.0 \
+  portal=${REGISTRY_URL}/securebox/portal:v1.2.0 \
   -n securebox
 
 # Rollout durumunu izle
@@ -314,9 +314,9 @@ kubectl get secret harbor-registry-secret -n securebox -o yaml
 # Secret'i yeniden oluştur
 kubectl delete secret harbor-registry-secret -n securebox
 kubectl create secret docker-registry harbor-registry-secret \
-  --docker-server=${GTECH_REPO_URL} \
-  --docker-username=${GTECH_REPO_USERNAME} \
-  --docker-password=${GTECH_REPO_TOKEN} \
+  --docker-server=${REGISTRY_URL} \
+  --docker-username=${REGISTRY_USERNAME} \
+  --docker-password=${REGISTRY_TOKEN} \
   --namespace=securebox
 ```
 

@@ -62,7 +62,41 @@ public record KeyQueryParams(
     bool? ExpiringIn30Days = null
 );
 
-public record RetrieveKeyRequest(string? Reason = null);
+public record RetrieveKeyRequest(string? Password = null, string? Reason = null);
+
+public record ExpiryWarningDto(string Kind, Guid Id, string Name, DateTime ExpiresAt, int DaysLeft);
+
+public record DashboardStatsDto(
+    int TotalKeys,
+    int ActiveKeys,
+    int ExpiredKeys,
+    int RevokedKeys,
+    int TotalCertificates,
+    int TotalUsers,
+    IReadOnlyList<EnvironmentCountDto> KeysByEnvironment,
+    IReadOnlyList<RecentActivityDto> RecentActivity,
+    int ExpiringKeys30Days,
+    int ExpiringCertificates30Days,
+    IReadOnlyList<ExpiryWarningDto> UpcomingExpiries
+);
+
+public record EnvironmentCountDto(string Environment, int Count);
+
+public record RecentActivityDto(string Action, string Resource, DateTime Timestamp, string Username);
+
+public record AuditTrailListDto(
+    Guid AuditId,
+    Guid? UserId,
+    string Username,
+    string Action,
+    string Resource,
+    Guid? ResourceId,
+    string? Details,
+    string? IPAddress,
+    string? UserAgent,
+    string Severity,
+    DateTime Timestamp
+);
 
 public record RotateKeyRequest(
     string NewValue,

@@ -85,10 +85,33 @@ public static class DatabaseInitializer
             await ApplyMigrationsAsync(dbContext, logger, cancellationToken);
         }
 
+        await EnsureMfaColumnsAsync(dbContext, logger, cancellationToken);
+
         if (options.SeedDefaultsOnStartup)
         {
-            await SeedDefaultsAsync(dbContext, logger, cancellationToken);
+            await SeedDefaultsAsync(dbContext, configuration, logger, cancellationToken);
         }
+    }
+
+    private static async Task EnsureMfaColumnsAsync(
+        SecureBoxDbContext dbContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        if (!dbContext.Database.IsRelational())
+        {
+            return;
+        }
+
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "MfaEnabled" BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "MustSetupMfa" BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "TotpSecretProtected" BYTEA;
+            UPDATE "Users" SET "MustSetupMfa" = TRUE WHERE "Username" = 'admin' AND "MfaEnabled" = FALSE;
+            """,
+            cancellationToken);
+        logger.LogInformation("Ensured MFA columns on Users.");
     }
 
     private static async Task ApplyMigrationsAsync(
@@ -97,12 +120,20 @@ public static class DatabaseInitializer
         CancellationToken cancellationToken)
     {
         logger.LogInformation("Applying database migrations (if any).");
-        await dbContext.Database.MigrateAsync(cancellationToken);
-        logger.LogInformation("Database migrations applied.");
+        try
+        {
+            await dbContext.Database.MigrateAsync(cancellationToken);
+            logger.LogInformation("Database migrations applied.");
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07")
+        {
+            logger.LogWarning(ex, "Schema already exists (likely created by init.sql). Continuing without EF migrate.");
+        }
     }
 
     private static async Task SeedDefaultsAsync(
         SecureBoxDbContext dbContext,
+        IConfiguration configuration,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -111,7 +142,7 @@ public static class DatabaseInitializer
         var permissions = await EnsurePermissionsAsync(dbContext, now, cancellationToken);
         var roles = await EnsureRolesAsync(dbContext, now, cancellationToken);
         await EnsureRolePermissionsAsync(dbContext, roles, permissions, now, cancellationToken);
-        await EnsureAdminUserAsync(dbContext, roles, now, cancellationToken);
+        await EnsureAdminUserAsync(dbContext, roles, configuration, logger, now, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Default Secure Box data ensured.");
@@ -298,6 +329,8 @@ public static class DatabaseInitializer
     private static async Task EnsureAdminUserAsync(
         SecureBoxDbContext dbContext,
         IReadOnlyDictionary<string, Role> roles,
+        IConfiguration configuration,
+        ILogger logger,
         DateTime now,
         CancellationToken cancellationToken)
     {
@@ -307,9 +340,21 @@ public static class DatabaseInitializer
 
         if (adminUser is null)
         {
-            // Default admin password: Admin@123
-            var defaultPassword = "Admin@123";
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword);
+            var defaultPassword = configuration["Database:DefaultAdminPassword"];
+            if (string.IsNullOrWhiteSpace(defaultPassword))
+            {
+                var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+                if (string.Equals(env, "Testing", StringComparison.OrdinalIgnoreCase))
+                {
+                    defaultPassword = "Admin@123";
+                }
+                else
+                {
+                    throw new InvalidOperationException("Database__DefaultAdminPassword / ADMIN_PASSWORD is required to seed admin");
+                }
+            }
+
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword, 12);
 
             adminUser = new User
             {
@@ -321,6 +366,8 @@ public static class DatabaseInitializer
                 LastName = "Administrator",
                 IsActive = true,
                 IsEmailVerified = true,
+                MustChangePassword = true,
+                MustSetupMfa = true,
                 CreatedAt = now,
                 UpdatedAt = now
             };

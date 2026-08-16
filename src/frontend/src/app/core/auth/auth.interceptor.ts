@@ -1,49 +1,72 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError, filter, switchMap, take } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
+  private isRefreshing = false;
+  private refreshSubject = new BehaviorSubject<string | null>(null);
+
   constructor(private authService: AuthService) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Add access token to request headers
-    const token = localStorage.getItem('access_token');
-    if (token && !request.url.includes('/auth/')) {
-      request = request.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+    const isAuthLogin = request.url.includes('/auth/login');
+    const isAuthRefresh = request.url.includes('/auth/refresh');
+    request = request.clone({ withCredentials: true });
+
+    const token = this.authService.getAccessToken();
+    if (token && !isAuthLogin && !isAuthRefresh) {
+      request = this.withToken(request, token);
     }
 
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401 && !request.url.includes('/auth/login')) {
-          // Try to refresh token
-          return this.authService.refreshToken().pipe(
-            switchMap(() => {
-              // Retry original request with new token
-              const newToken = localStorage.getItem('access_token');
-              const clonedRequest = request.clone({
-                setHeaders: {
-                  Authorization: `Bearer ${newToken}`
-                }
-              });
-              return next.handle(clonedRequest);
-            }),
-            catchError(() => {
-              // Refresh failed, logout
-              this.authService.logout();
-              return throwError(() => error);
-            })
-          );
+        if (error.status === 401 && !isAuthLogin && !isAuthRefresh) {
+          return this.handle401(request, next);
         }
         return throwError(() => error);
       })
     );
   }
-}
 
+  private handle401(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (!this.isRefreshing) {
+      this.isRefreshing = true;
+      this.refreshSubject.next(null);
+
+      return this.authService.refreshToken().pipe(
+        switchMap(() => {
+          this.isRefreshing = false;
+          const newToken = this.authService.getAccessToken();
+          this.refreshSubject.next(newToken);
+          return next.handle(this.withToken(request, newToken));
+        }),
+        catchError((err) => {
+          this.isRefreshing = false;
+          this.authService.logout();
+          return throwError(() => err);
+        })
+      );
+    }
+
+    return this.refreshSubject.pipe(
+      filter(token => token !== null),
+      take(1),
+      switchMap(token => next.handle(this.withToken(request, token!)))
+    );
+  }
+
+  private withToken(request: HttpRequest<any>, token: string | null): HttpRequest<any> {
+    if (!token) {
+      return request;
+    }
+    return request.clone({
+      withCredentials: true,
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
+}

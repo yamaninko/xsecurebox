@@ -725,7 +725,7 @@ CREATE TABLE KeyAccessLogs_2025_02 PARTITION OF KeyAccessLogs
 ### 7.1 Default Admin User
 
 ```sql
--- Password: Admin@123 (BCrypt hashed)
+-- Admin password is set from ADMIN_PASSWORD at runtime (not stored in this file)
 INSERT INTO Users (UserId, Username, Email, PasswordHash, FirstName, LastName, IsActive, IsEmailVerified)
 VALUES (
     '00000000-0000-0000-0000-000000000001'::UUID,

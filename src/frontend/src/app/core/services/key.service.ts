@@ -24,6 +24,9 @@ export interface CreateKeyRequest {
   keyType: string;
   value: string;
   certificateId: string;
+  encryptionAlgorithm?: string;
+  environmentTag?: string;
+  tags?: string[];
   expiresAt?: string;
   ownerUserId?: string;
 }
@@ -64,8 +67,8 @@ export class KeyService {
     return this.http.post<any>(this.API_URL, request);
   }
 
-  retrieveKey(keyId: string, reason?: string): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/${keyId}/retrieve`, { reason });
+  retrieveKey(keyId: string, password: string, reason?: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/${keyId}/retrieve`, { password, reason });
   }
 
   updateKey(keyId: string, request: any): Observable<any> {

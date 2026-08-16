@@ -4,7 +4,7 @@
       <h1>🛡️ Role Management</h1>
       <p class="subtitle">Manage user roles and permissions</p>
     </div>
-    <button class="btn btn-primary">➕ Create New Role</button>
+    <button class="btn btn-primary" (click)="showCreate = true">➕ Create New Role</button>
   </div>
 
   <div *ngIf="loading" class="loading">
@@ -31,6 +31,17 @@
         <button class="btn-sm btn-danger" (click)="deleteRole(role)" [disabled]="role.isSystem">Delete</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="showCreate" (click)="showCreate = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>Yeni rol</h2>
+    <form (ngSubmit)="createRole()">
+      <label>Ad <input [(ngModel)]="newRole.roleName" name="roleName" required></label>
+      <label>Açıklama <input [(ngModel)]="newRole.description" name="description"></label>
+      <button type="submit" class="btn btn-primary">Kaydet</button>
+    </form>
   </div>
 </div>
 

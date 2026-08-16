@@ -65,9 +65,19 @@
         </button>
       </form>
 
+      <form *ngIf="mfaChallengeId" (ngSubmit)="submitMfa()" class="login-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>MFA kodu</mat-label>
+          <input matInput [(ngModel)]="mfaCode" name="mfaCode" maxlength="6" autocomplete="one-time-code">
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="submit" class="login-button" [disabled]="isLoading || mfaCode.length < 6">
+          Doğrula
+        </button>
+      </form>
+
       <div class="login-info">
         <mat-icon class="info-icon">info</mat-icon>
-        <p>Varsayılan kullanıcı: <strong>admin</strong> / <strong>Admin&#64;123</strong></p>
+        <p>İlk girişte yönetici şifresini değiştirmeniz gerekir.</p>
       </div>
 
       <div class="documentation-link">

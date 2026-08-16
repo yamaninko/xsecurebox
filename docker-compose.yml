@@ -1,18 +1,17 @@
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: securebox-postgres
     environment:
       POSTGRES_DB: secureboxdb
       POSTGRES_USER: securebox_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMe123!}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infrastructure/postgres:/docker-entrypoint-initdb.d
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     networks:
       - backend-network
     healthcheck:
@@ -21,138 +20,46 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: securebox-redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-RedisPass123!}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     volumes:
       - redis-data:/data
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
     networks:
       - backend-network
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
 
-  # MongoDB for Logs
-  mongodb:
-    image: mongo:7
-    container_name: securebox-mongodb
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-MongoPass123!}
-      MONGO_INITDB_DATABASE: securebox
-    volumes:
-      - mongodb-data:/data/db
-    ports:
-      - "27018:27017"
-    networks:
-      - backend-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # RabbitMQ Message Broker
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: securebox-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-RabbitPass123!}
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    ports:
-      - "5673:5672"   # AMQP port
-      - "15673:15672" # Management UI
-    networks:
-      - backend-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Elasticsearch
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: securebox-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - xpack.security.enabled=false
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-    ports:
-      - "9201:9200"
-    networks:
-      - monitoring-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # Logstash
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.0
-    container_name: securebox-logstash
-    volumes:
-      - ./infrastructure/logstash/pipeline:/usr/share/logstash/pipeline
-    ports:
-      - "5045:5044"
-    networks:
-      - monitoring-network
-      - backend-network
-    depends_on:
-      - elasticsearch
-    environment:
-      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
-
-  # Kibana
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: securebox-kibana
-    environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-    ports:
-      - "5602:5601"
-    networks:
-      - monitoring-network
-    depends_on:
-      - elasticsearch
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # ASP.NET API (Backend) - Replica 1
   api-1:
     build:
       context: ./src/backend
       dockerfile: SecureBox.API/Dockerfile
     container_name: securebox-api-1
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
       - EnableSwagger=true
       - DisableHttpsRedirect=true
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=secureboxdb;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
-      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-RedisPass123!}
-      - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox?authSource=admin
-      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASS:-RabbitPass123!}@rabbitmq:5672/
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=secureboxdb;Username=securebox_user;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+      - JwtSettings__Issuer=SecureBoxAPI
+      - JwtSettings__Audience=SecureBoxPortal
+      - Encryption__KeyEncryptionKey=${ENCRYPTION_KEK:?Set ENCRYPTION_KEK in .env}
+      - Database__DefaultAdminPassword=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      - Database__ApplyMigrationsOnStartup=false
+      - Database__SeedDefaultsOnStartup=true
     volumes:
-      - ./infrastructure/certificates:/app/certificates:ro
       - ./logs/api-1:/app/logs
     ports:
-      - "5002:5000"
+      - "127.0.0.1:5002:5000"
     networks:
       - backend-network
       - frontend-network
@@ -161,37 +68,34 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health/live || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # ASP.NET API (Backend) - Replica 2
   api-2:
     build:
       context: ./src/backend
       dockerfile: SecureBox.API/Dockerfile
     container_name: securebox-api-2
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
       - EnableSwagger=true
       - DisableHttpsRedirect=true
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=secureboxdb;Username=securebox_user;Password=${POSTGRES_PASSWORD:-ChangeMe123!}
-      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-RedisPass123!}
-      - ConnectionStrings__MongoDB=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-MongoPass123!}@mongodb:27017/securebox?authSource=admin
-      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASS:-RabbitPass123!}@rabbitmq:5672/
+      - ConnectionStrings__PostgreSQL=Host=postgres;Port=5432;Database=secureboxdb;Username=securebox_user;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+      - JwtSettings__Issuer=SecureBoxAPI
+      - JwtSettings__Audience=SecureBoxPortal
+      - Encryption__KeyEncryptionKey=${ENCRYPTION_KEK:?Set ENCRYPTION_KEK in .env}
+      - Database__DefaultAdminPassword=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      - Database__ApplyMigrationsOnStartup=false
+      - Database__SeedDefaultsOnStartup=true
     volumes:
-      - ./infrastructure/certificates:/app/certificates:ro
       - ./logs/api-2:/app/logs
-    ports:
-      - "5001:5000"
     networks:
       - backend-network
       - frontend-network
@@ -200,17 +104,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health/live || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Angular Portal (Frontend)
   portal:
     build:
       context: ./src/frontend
@@ -222,7 +121,6 @@ services:
       - api-1
       - api-2
 
-  # Nginx Load Balancer
   nginx:
     image: nginx:alpine
     container_name: securebox-nginx
@@ -240,7 +138,7 @@ services:
       - api-2
       - portal
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -250,17 +148,9 @@ volumes:
     driver: local
   redis-data:
     driver: local
-  mongodb-data:
-    driver: local
-  rabbitmq-data:
-    driver: local
-  elasticsearch-data:
-    driver: local
 
 networks:
   frontend-network:
     driver: bridge
   backend-network:
-    driver: bridge
-  monitoring-network:
     driver: bridge

@@ -19,7 +19,7 @@ on:
           - prod
 
 env:
-  REGISTRY: ${{ secrets.GTECH_REPO_URL }}
+  REGISTRY: ${{ secrets.REGISTRY_URL }}
   KUBECTL_VERSION: 'v1.28.0'
 
 jobs:
@@ -58,16 +58,16 @@ jobs:
       - name: Create Harbor registry secret
         run: |
           kubectl create secret docker-registry harbor-registry-secret \
-            --docker-server=${{ secrets.GTECH_REPO_URL }} \
-            --docker-username=${{ secrets.GTECH_REPO_USERNAME }} \
-            --docker-password=${{ secrets.GTECH_REPO_TOKEN }} \
+            --docker-server=${{ secrets.REGISTRY_URL }} \
+            --docker-username=${{ secrets.REGISTRY_USERNAME }} \
+            --docker-password=${{ secrets.REGISTRY_TOKEN }} \
             --namespace=securebox \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Update ConfigMap with environment variables
         run: |
           # Replace placeholder with actual registry URL
-          find kubernetes/base -type f -name '*.yaml' -exec sed -i "s|\${GTECH_REPO_URL}|${{ secrets.GTECH_REPO_URL }}|g" {} +
+          find kubernetes/base -type f -name '*.yaml' -exec sed -i "s|\${REGISTRY_URL}|${{ secrets.REGISTRY_URL }}|g" {} +
 
       - name: Apply Kubernetes manifests
         run: |

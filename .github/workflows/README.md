@@ -4,7 +4,7 @@ Bu klasör Secure Box projesinin CI/CD pipeline'larını içerir.
 
 ## 🔄 Pipeline'lar
 
-### 1. Build and Push to Harbor (`build-and-push.yml`)
+### 1. Build and Push (`build-and-push.yml`)
 
 **Tetiklenme:**
 - `main` veya `develop` branch'ine push
@@ -18,7 +18,7 @@ Bu klasör Secure Box projesinin CI/CD pipeline'larını içerir.
 1. **Build API**
    - Backend kodunu checkout et
    - Docker Buildx ile multi-platform build hazırlığı
-   - Harbor registry'ye login
+   - Container registry'ye login
    - Metadata extraction (tags, labels)
    - Docker image build ve push
    - Build cache kullanımı (GitHub Actions cache)
@@ -27,7 +27,7 @@ Bu klasör Secure Box projesinin CI/CD pipeline'larını içerir.
 2. **Build Portal**
    - Frontend kodunu checkout et
    - Docker Buildx kurulumu
-   - Harbor registry'ye login
+   - Container registry'ye login
    - Image build ve push
    - Temizlik
 
@@ -57,7 +57,7 @@ Bu klasör Secure Box projesinin CI/CD pipeline'larını içerir.
 
 2. **Namespace ve Secrets**
    - `securebox` namespace oluşturma
-   - Harbor registry secret oluşturma
+   - Registry pull secret oluşturma
    - ConfigMap değişkenlerini güncelleme
 
 3. **Database Deployment**
@@ -87,12 +87,12 @@ Bu klasör Secure Box projesinin CI/CD pipeline'larını içerir.
 
 GitHub Repository Settings > Secrets and variables > Actions'da aşağıdaki secret'ları tanımlayın:
 
-### Harbor Registry Secrets
+### Container registry secrets
 
 ```bash
-GTECH_REPO_URL          # Harbor registry URL (örn: harbor.example.com)
-GTECH_REPO_USERNAME     # Harbor kullanıcı adı (robot account önerili)
-GTECH_REPO_TOKEN        # Harbor access token veya password
+REGISTRY_URL          # Registry host (ghcr.io, docker.io, or your registry)
+REGISTRY_USERNAME     # Registry username
+REGISTRY_TOKEN        # Registry token or password
 ```
 
 ### Kubernetes Secrets
@@ -120,9 +120,9 @@ cat ~/.kube/config | base64
 ```bash
 # Repository Settings > Secrets > Actions > New repository secret
 
-1. GTECH_REPO_URL = harbor.example.com
-2. GTECH_REPO_USERNAME = robot$securebox
-3. GTECH_REPO_TOKEN = eyJhbGc...
+1. REGISTRY_URL = ghcr.io/your-org
+2. REGISTRY_USERNAME = your-github-username
+3. REGISTRY_TOKEN = ghp_...
 4. KUBECONFIG = <base64-encoded-kubeconfig>
 ```
 
@@ -299,7 +299,7 @@ docker build -t test-portal .
 
 ```bash
 # Credentials'ları kontrol et
-docker login ${GTECH_REPO_URL}
+docker login ${REGISTRY_URL}
 
 # Robot account permissions'ları kontrol et (Harbor UI)
 # Project > Robot Accounts > Check permissions
@@ -318,9 +318,9 @@ kubectl get secret harbor-registry-secret -n securebox
 # Secret'i yeniden oluştur
 kubectl delete secret harbor-registry-secret -n securebox
 kubectl create secret docker-registry harbor-registry-secret \
-  --docker-server=${GTECH_REPO_URL} \
-  --docker-username=${GTECH_REPO_USERNAME} \
-  --docker-password=${GTECH_REPO_TOKEN} \
+  --docker-server=${REGISTRY_URL} \
+  --docker-username=${REGISTRY_USERNAME} \
+  --docker-password=${REGISTRY_TOKEN} \
   --namespace=securebox
 ```
 

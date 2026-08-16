@@ -1,12 +1,12 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SecureBox.API.Security;
 using SecureBox.Core.DTOs;
 using SecureBox.Core.Interfaces;
 
 namespace SecureBox.API.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/v1/clients")]
 public class ApiClientsController : ControllerBase
@@ -20,11 +20,7 @@ public class ApiClientsController : ControllerBase
         _logger = logger;
     }
 
-    private Guid GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
-    }
+    private Guid GetCurrentUserId() => User.GetUserId();
 
     /// <summary>
     /// Get all API clients

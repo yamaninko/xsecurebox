@@ -8,9 +8,7 @@ resources:
   - configmap.yaml
   - secrets.yaml
   - postgres-deployment.yaml
-  - mongodb-deployment.yaml
   - redis-deployment.yaml
-  - rabbitmq-deployment.yaml
   - api-deployment.yaml
   - portal-deployment.yaml
   - nginx-configmap.yaml
@@ -21,8 +19,8 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
 
 images:
-  - name: ${GTECH_REPO_URL}/securebox/api
+  - name: ${REGISTRY_URL}/securebox/api
     newTag: latest
-  - name: ${GTECH_REPO_URL}/securebox/portal
+  - name: ${REGISTRY_URL}/securebox/portal
     newTag: latest
 

@@ -26,7 +26,7 @@ spec:
       - name: harbor-registry-secret
       containers:
       - name: portal
-        image: ${GTECH_REPO_URL}/securebox/portal:latest
+        image: ${REGISTRY_URL}/securebox/portal:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80

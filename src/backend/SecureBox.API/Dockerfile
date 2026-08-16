@@ -1,7 +1,9 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 EXPOSE 5000
-EXPOSE 5001
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
@@ -19,6 +21,8 @@ RUN dotnet publish "SecureBox.API.csproj" -c Release -o /app/publish /p:UseAppHo
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN mkdir -p /app/logs && chown -R $APP_UID:$APP_UID /app
 ENV ASPNETCORE_URLS=http://+:5000
+USER $APP_UID
 ENTRYPOINT ["dotnet", "SecureBox.API.dll"]
 

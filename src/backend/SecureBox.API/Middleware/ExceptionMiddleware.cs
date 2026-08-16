@@ -67,7 +67,17 @@ public class ExceptionMiddleware
                 response.Error = new ErrorDetail
                 {
                     Code = "NOT_FOUND",
-                    Message = "Resource not found"
+                    Message = ex.Message
+                };
+                break;
+
+            case InvalidOperationException:
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                response.Success = false;
+                response.Error = new ErrorDetail
+                {
+                    Code = "INVALID_OPERATION",
+                    Message = ex.Message
                 };
                 break;
 

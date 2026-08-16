@@ -10,22 +10,22 @@ Secure Box projesi için özellik backlog'u. Her feature MVP (Minimum Viable Pro
 
 | #  | Feature                                    | Priority    | Size    | Phase      | Status      |
 |----|-----------------------------------------------|-------------|---------|------------|-------------|
-| 1  | User Authentication & Authorization           | Must Have   | Large   | MVP        | 🟡 In Progress |
-| 2  | Certificate Management (Upload, List, View)   | Must Have   | Large   | MVP        | 🔴 Not Started |
-| 3  | Key Management (Create, Retrieve, List)       | Must Have   | Large   | MVP        | 🔴 Not Started |
-| 4  | Encryption/Decryption Service                 | Must Have   | Large   | MVP        | 🔴 Not Started |
-| 5  | Audit Logging (PostgreSQL + MongoDB)          | Must Have   | Medium  | MVP        | 🔴 Not Started |
-| 6  | Role-Based Access Control (RBAC)              | Must Have   | Medium  | MVP        | 🔴 Not Started |
-| 7  | Admin Dashboard (Metrics, Alerts)             | Should Have | Medium  | MVP        | 🔴 Not Started |
-| 8  | Client Dashboard (My Keys, Access History)    | Should Have | Small   | MVP        | 🔴 Not Started |
-| 9  | Key Rotation                                  | Should Have | Medium  | MVP        | 🔴 Not Started |
-| 10 | Key Revocation                                | Must Have   | Small   | MVP        | 🔴 Not Started |
-| 11 | Certificate Expiry Monitoring & Alerts        | Should Have | Small   | MVP        | 🔴 Not Started |
-| 12 | Rate Limiting (Redis-based)                   | Must Have   | Medium  | MVP        | 🔴 Not Started |
-| 13 | Health Check & Monitoring (ELK Stack)         | Should Have | Medium  | MVP        | 🔴 Not Started |
-| 14 | API Documentation (Swagger/OpenAPI)           | Should Have | Small   | MVP        | 🔴 Not Started |
-| 15 | Docker-Compose Deployment                     | Must Have   | Medium  | MVP        | 🔴 Not Started |
-| 16 | Multi-Factor Authentication (MFA/TOTP)        | Should Have | Medium  | Post-MVP   | 🔴 Not Started |
+| 1  | User Authentication & Authorization           | Must Have   | Large   | MVP        | 🟢 Completed |
+| 2  | Certificate Management (Upload, List, View)   | Must Have   | Large   | MVP        | 🟢 Completed |
+| 3  | Key Management (Create, Retrieve, List)       | Must Have   | Large   | MVP        | 🟢 Completed |
+| 4  | Encryption/Decryption Service                 | Must Have   | Large   | MVP        | 🟢 Completed |
+| 5  | Audit Logging (PostgreSQL)                    | Must Have   | Medium  | MVP        | 🟢 Completed |
+| 6  | Role-Based Access Control (RBAC)              | Must Have   | Medium  | MVP        | 🟢 Completed |
+| 7  | Admin Dashboard (Metrics, Alerts)             | Should Have | Medium  | MVP        | 🟢 Completed |
+| 8  | Client Dashboard (My Keys, Access History)    | Should Have | Small   | MVP        | 🟢 Completed |
+| 9  | Key Rotation                                  | Should Have | Medium  | MVP        | 🟢 Completed |
+| 10 | Key Revocation                                | Must Have   | Small   | MVP        | 🟢 Completed |
+| 11 | Certificate Expiry Monitoring & Alerts        | Should Have | Small   | MVP        | 🟢 Completed |
+| 12 | Rate Limiting (Redis-based)                   | Must Have   | Medium  | MVP        | 🟢 Completed |
+| 13 | Health Check & Monitoring                     | Should Have | Medium  | MVP        | 🟢 Completed |
+| 14 | API Documentation (Swagger/OpenAPI)           | Should Have | Small   | MVP        | 🟢 Completed |
+| 15 | Docker-Compose Deployment                     | Must Have   | Medium  | MVP        | 🟢 Completed |
+| 16 | Multi-Factor Authentication (MFA/TOTP)        | Should Have | Medium  | Post-MVP   | 🟢 Completed |
 | 17 | Key Expiration & Auto-Archival                | Should Have | Small   | Post-MVP   | 🔴 Not Started |
 | 18 | Advanced Search & Filtering (Keys/Certs)      | Could Have  | Small   | Post-MVP   | 🔴 Not Started |
 | 19 | Notification System (Email Alerts)            | Could Have  | Medium  | Post-MVP   | 🔴 Not Started |

@@ -1,6 +1,5 @@
-// The build errors in this file have been fixed. Please run the build again.
+using System.Text;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +10,7 @@ using SecureBox.Core.DTOs;
 using SecureBox.Core.Entities;
 using SecureBox.Core.Interfaces;
 using SecureBox.Infrastructure.Data;
+using SecureBox.Infrastructure.Security;
 
 namespace SecureBox.Infrastructure.Services;
 
@@ -20,6 +20,8 @@ public class AuthService : IAuthService
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     private readonly SecureBoxDbContext _dbContext;
+    private readonly ITokenStore _tokenStore;
+    private readonly EncryptionService _encryption;
     private readonly ILogger<AuthService> _logger;
     private readonly JwtSecurityTokenHandler _tokenHandler = new();
     private readonly SymmetricSecurityKey _signingKey;
@@ -30,10 +32,15 @@ public class AuthService : IAuthService
 
     public AuthService(
         SecureBoxDbContext dbContext,
+        ITokenStore tokenStore,
+        IEncryptionService encryption,
         IConfiguration configuration,
         ILogger<AuthService> logger)
     {
         _dbContext = dbContext;
+        _tokenStore = tokenStore;
+        _encryption = encryption as EncryptionService
+                      ?? throw new InvalidOperationException("EncryptionService required for MFA secrets");
         _logger = logger;
 
         var jwtSection = configuration.GetSection("JwtSettings");
@@ -50,7 +57,7 @@ public class AuthService : IAuthService
         _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    public async Task<LoginOutcome> LoginAsync(LoginRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
         {
@@ -62,6 +69,8 @@ public class AuthService : IAuthService
         var user = await _dbContext.Users
             .Include(u => u.UserRoles)
             .ThenInclude(ur => ur.Role)
+            .ThenInclude(r => r.RolePermissions)
+            .ThenInclude(rp => rp.Permission)
             .SingleOrDefaultAsync(u => u.Username == username);
 
         if (user is null)
@@ -92,36 +101,82 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
 
-        var roles = user.UserRoles
-            .Select(ur => ur.Role?.RoleName)
-            .Where(role => !string.IsNullOrWhiteSpace(role))
-            .Select(role => role!)
-            .Distinct()
-            .ToList();
+        if (user.MfaEnabled)
+        {
+            var challengeId = $"{user.UserId:N}.{Guid.NewGuid():N}";
+            await _tokenStore.StoreRefreshTokenAsync(user.UserId, "mfa:" + challengeId, TimeSpan.FromMinutes(5));
+            return new LoginOutcome(true, challengeId, null);
+        }
 
-        var accessToken = GenerateToken(user, roles, isRefreshToken: false);
-        var refreshToken = GenerateToken(user, roles, isRefreshToken: true);
-
-        var userDto = new UserDto(
-            user.UserId,
-            user.Username,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.IsActive,
-            roles,
-            user.CreatedAt,
-            user.LastLoginAt);
-
-        return new AuthResponse(
-            accessToken,
-            refreshToken,
-            _accessTokenExpirationMinutes * 60,
-            "Bearer",
-            userDto);
+        return new LoginOutcome(false, null, await IssueSessionAsync(user));
     }
 
-    public async Task<TokenResponse> RefreshTokenAsync(string refreshToken)
+    public async Task<AuthSession> VerifyMfaAsync(string challengeId, string code)
+    {
+        if (string.IsNullOrWhiteSpace(challengeId) || challengeId.Length < 33)
+        {
+            throw new UnauthorizedAccessException("Geçersiz MFA kodu");
+        }
+
+        var userIdText = challengeId.Split('.')[0];
+        if (!Guid.TryParseExact(userIdText, "N", out var userId))
+        {
+            throw new UnauthorizedAccessException("Geçersiz MFA kodu");
+        }
+
+        if (!await _tokenStore.RefreshTokenExistsAsync(userId, "mfa:" + challengeId))
+        {
+            throw new UnauthorizedAccessException("MFA oturumu süresi doldu");
+        }
+
+        var user = await LoadUserGraphAsync(userId)
+                   ?? throw new UnauthorizedAccessException("Kullanıcı bulunamadı");
+
+        var secret = Encoding.UTF8.GetString(_encryption.UnprotectPrivateKey(user.TotpSecretProtected
+            ?? throw new UnauthorizedAccessException("MFA tanımlı değil")));
+        if (!Totp.Verify(secret, code))
+        {
+            throw new UnauthorizedAccessException("Geçersiz MFA kodu");
+        }
+
+        await _tokenStore.RevokeRefreshTokenAsync(userId, "mfa:" + challengeId);
+        return await IssueSessionAsync(user);
+    }
+
+    public async Task<MfaSetupDto> BeginMfaSetupAsync(Guid userId)
+    {
+        var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.UserId == userId)
+                   ?? throw new KeyNotFoundException("User not found");
+        var secret = Totp.GenerateSecret();
+        user.TotpSecretProtected = _encryption.ProtectPrivateKey(Encoding.UTF8.GetBytes(secret));
+        user.MfaEnabled = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+        return new MfaSetupDto(secret, Totp.OtpAuthUri("SecureBox", user.Username, secret));
+    }
+
+    public async Task EnableMfaAsync(Guid userId, string code)
+    {
+        var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.UserId == userId)
+                   ?? throw new KeyNotFoundException("User not found");
+        if (user.TotpSecretProtected is null)
+        {
+            throw new InvalidOperationException("MFA kurulumu başlatılmamış");
+        }
+
+        var secret = Encoding.UTF8.GetString(_encryption.UnprotectPrivateKey(user.TotpSecretProtected));
+        if (!Totp.Verify(secret, code))
+        {
+            throw new UnauthorizedAccessException("Geçersiz MFA kodu");
+        }
+
+        user.MfaEnabled = true;
+        user.MustSetupMfa = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task<AuthSession> RefreshTokenAsync(string refreshToken)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
@@ -133,10 +188,16 @@ public class AuthService : IAuthService
             var principal = ValidateToken(refreshToken, expectRefreshToken: true);
             var userIdValue = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value ??
                               principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var jti = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
 
-            if (!Guid.TryParse(userIdValue, out var userId))
+            if (!Guid.TryParse(userIdValue, out var userId) || string.IsNullOrWhiteSpace(jti))
             {
                 throw new UnauthorizedAccessException("Kullanıcı doğrulanamadı");
+            }
+
+            if (!await _tokenStore.RefreshTokenExistsAsync(userId, jti))
+            {
+                throw new UnauthorizedAccessException("Oturum yenileme anahtarı geçersiz veya iptal edilmiş");
             }
 
             var user = await _dbContext.Users
@@ -149,19 +210,23 @@ public class AuthService : IAuthService
                 throw new UnauthorizedAccessException("Kullanıcı bulunamadı");
             }
 
-            var roles = user.UserRoles
-                .Select(ur => ur.Role?.RoleName)
-                .Where(role => !string.IsNullOrWhiteSpace(role))
-                .Select(role => role!)
-                .Distinct()
-                .ToList();
+            await _tokenStore.RevokeRefreshTokenAsync(userId, jti);
 
-            var newAccessToken = GenerateToken(user, roles, isRefreshToken: false);
+            var newAccessJti = Guid.NewGuid().ToString("N");
+            var newRefreshJti = Guid.NewGuid().ToString("N");
+            var newAccessToken = GenerateToken(user, newAccessJti, isRefreshToken: false);
+            var newRefreshToken = GenerateToken(user, newRefreshJti, isRefreshToken: true);
 
-            return new TokenResponse(
+            await _tokenStore.StoreRefreshTokenAsync(
+                user.UserId,
+                newRefreshJti,
+                TimeSpan.FromDays(_refreshTokenExpirationDays));
+
+            return new AuthSession(
                 newAccessToken,
+                newRefreshToken,
                 _accessTokenExpirationMinutes * 60,
-                "Bearer");
+                UserService.Map(user));
         }
         catch (SecurityTokenException ex)
         {
@@ -170,11 +235,49 @@ public class AuthService : IAuthService
         }
     }
 
-    public Task LogoutAsync(Guid userId, string? refreshToken = null)
+    public async Task LogoutAsync(Guid userId, string? refreshToken = null, string? accessToken = null)
     {
-        // Token revocation is not persisted yet; method provided for future enhancements.
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            try
+            {
+                var principal = ValidateToken(refreshToken, expectRefreshToken: true);
+                var jti = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+                if (!string.IsNullOrWhiteSpace(jti))
+                {
+                    await _tokenStore.RevokeRefreshTokenAsync(userId, jti);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Refresh token already invalid during logout");
+            }
+        }
+        else
+        {
+            await _tokenStore.RevokeAllRefreshTokensAsync(userId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            try
+            {
+                var principal = ValidateToken(accessToken, expectRefreshToken: false);
+                var jti = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+                if (!string.IsNullOrWhiteSpace(jti))
+                {
+                    await _tokenStore.BlacklistAccessTokenAsync(
+                        jti,
+                        TimeSpan.FromMinutes(_accessTokenExpirationMinutes));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Access token already invalid during logout");
+            }
+        }
+
         _logger.LogInformation("User {UserId} logged out", userId);
-        return Task.CompletedTask;
     }
 
     public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
@@ -195,21 +298,64 @@ public class AuthService : IAuthService
             return false;
         }
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, UserService.PasswordWorkFactor);
         user.MustChangePassword = false;
         user.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
 
+        await _tokenStore.RevokeAllRefreshTokensAsync(userId);
         return true;
     }
 
-    private string GenerateToken(User user, IReadOnlyCollection<string> roles, bool isRefreshToken)
+    public async Task<bool> VerifyPasswordAsync(Guid userId, string password)
     {
+        if (string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
+
+        var user = await _dbContext.Users.SingleOrDefaultAsync(u => u.UserId == userId);
+        return user is not null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+    }
+
+    private async Task<AuthSession> IssueSessionAsync(User user)
+    {
+        var accessJti = Guid.NewGuid().ToString("N");
+        var refreshJti = Guid.NewGuid().ToString("N");
+        var accessToken = GenerateToken(user, accessJti, isRefreshToken: false);
+        var refreshToken = GenerateToken(user, refreshJti, isRefreshToken: true);
+        await _tokenStore.StoreRefreshTokenAsync(
+            user.UserId,
+            refreshJti,
+            TimeSpan.FromDays(_refreshTokenExpirationDays));
+        return new AuthSession(accessToken, refreshToken, _accessTokenExpirationMinutes * 60, UserService.Map(user));
+    }
+
+    private async Task<User?> LoadUserGraphAsync(Guid userId)
+    {
+        return await _dbContext.Users
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .ThenInclude(r => r.RolePermissions)
+            .ThenInclude(rp => rp.Permission)
+            .SingleOrDefaultAsync(u => u.UserId == userId);
+    }
+
+    private string GenerateToken(User user, string jti, bool isRefreshToken)
+    {
+        var roles = user.UserRoles
+            .Select(ur => ur.Role?.RoleName)
+            .Where(role => !string.IsNullOrWhiteSpace(role))
+            .Select(role => role!)
+            .Distinct()
+            .ToList();
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
             new(JwtRegisteredClaimNames.UniqueName, user.Username),
             new(JwtRegisteredClaimNames.Email, user.Email),
+            new(JwtRegisteredClaimNames.Jti, jti),
             new("token_type", isRefreshToken ? "refresh" : "access")
         };
 
@@ -226,13 +372,12 @@ public class AuthService : IAuthService
         foreach (var role in roles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("role", role));
         }
 
         var expires = isRefreshToken
             ? DateTime.UtcNow.AddDays(_refreshTokenExpirationDays)
             : DateTime.UtcNow.AddMinutes(_accessTokenExpirationMinutes);
-
-        var signingCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -240,7 +385,7 @@ public class AuthService : IAuthService
             Expires = expires,
             Issuer = _issuer,
             Audience = _audience,
-            SigningCredentials = signingCredentials
+            SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256)
         };
 
         var token = _tokenHandler.CreateToken(tokenDescriptor);
@@ -258,7 +403,9 @@ public class AuthService : IAuthService
             ValidIssuer = _issuer,
             ValidAudience = _audience,
             IssuerSigningKey = _signingKey,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            NameClaimType = JwtRegisteredClaimNames.UniqueName,
+            RoleClaimType = ClaimTypes.Role
         };
 
         var principal = _tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
@@ -294,289 +441,5 @@ public class AuthService : IAuthService
     {
         user.FailedLoginAttempts = 0;
         user.LockedOutUntil = null;
-    }
-}
-
-public class UserService : IUserService
-{
-    private readonly SecureBoxDbContext _dbContext;
-    private readonly ILogger<UserService> _logger;
-
-    public UserService(SecureBoxDbContext dbContext, ILogger<UserService> logger)
-    {
-        _dbContext = dbContext;
-        _logger = logger;
-    }
-
-    public async Task<IEnumerable<UserDto>> GetAllUsersAsync(UserQueryParams queryParams)
-    {
-        var query = _dbContext.Users
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(queryParams.Search))
-        {
-            query = query.Where(u => u.Username.Contains(queryParams.Search) ||
-                                     u.Email.Contains(queryParams.Search));
-        }
-
-        if (queryParams.IsActive.HasValue)
-        {
-            query = query.Where(u => u.IsActive == queryParams.IsActive.Value);
-        }
-
-        var users = await query
-            .Skip((queryParams.Page - 1) * queryParams.PageSize)
-            .Take(queryParams.PageSize)
-            .Select(u => new UserDto(
-                u.UserId,
-                u.Username,
-                u.Email,
-                u.FirstName,
-                u.LastName,
-                u.IsActive,
-                u.UserRoles.Select(ur => ur.Role!.RoleName).ToList(),
-                u.CreatedAt,
-                u.LastLoginAt
-            ))
-            .ToListAsync();
-
-        return users;
-    }
-
-    public async Task<UserDto?> GetUserByIdAsync(Guid userId)
-    {
-        var user = await _dbContext.Users
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.UserId == userId);
-
-        if (user == null) return null;
-
-        return new UserDto(
-            user.UserId,
-            user.Username,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.IsActive,
-            user.UserRoles.Select(ur => ur.Role!.RoleName).ToList(),
-            user.CreatedAt,
-            user.LastLoginAt
-        );
-    }
-
-    public async Task<UserDto> CreateUserAsync(CreateUserRequest request)
-    {
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-        var user = new User
-        {
-            UserId = Guid.NewGuid(),
-            Username = request.Username,
-            Email = request.Email,
-            PasswordHash = passwordHash,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _dbContext.Users.Add(user);
-        await _dbContext.SaveChangesAsync();
-
-        return new UserDto(
-            user.UserId,
-            user.Username,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.IsActive,
-            new List<string>(),
-            user.CreatedAt,
-            user.LastLoginAt
-        );
-    }
-
-    public async Task<UserDto> UpdateUserAsync(Guid userId, UpdateUserRequest request)
-    {
-        var user = await _dbContext.Users.FindAsync(userId);
-        if (user == null) throw new KeyNotFoundException("User not found");
-
-        if (request.Email != null) user.Email = request.Email;
-        if (request.FirstName != null) user.FirstName = request.FirstName;
-        if (request.LastName != null) user.LastName = request.LastName;
-        if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
-
-        user.UpdatedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
-
-        return new UserDto(
-            user.UserId,
-            user.Username,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-            user.IsActive,
-            new List<string>(),
-            user.CreatedAt,
-            user.LastLoginAt
-        );
-    }
-
-    public async Task DeleteUserAsync(Guid userId)
-    {
-        var user = await _dbContext.Users.FindAsync(userId);
-        if (user == null) throw new KeyNotFoundException("User not found");
-
-        user.DeletedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
-    }
-
-    public async Task AssignRoleToUserAsync(Guid userId, Guid roleId, Guid assignedBy)
-    {
-        var exists = await _dbContext.UserRoles
-            .AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
-
-        if (exists) return;
-
-        _dbContext.UserRoles.Add(new UserRole
-        {
-            UserRoleId = Guid.NewGuid(),
-            UserId = userId,
-            RoleId = roleId,
-            AssignedAt = DateTime.UtcNow,
-            AssignedBy = assignedBy
-        });
-
-        await _dbContext.SaveChangesAsync();
-    }
-
-    public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId)
-    {
-        var userRole = await _dbContext.UserRoles
-            .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
-
-        if (userRole != null)
-        {
-            _dbContext.UserRoles.Remove(userRole);
-            await _dbContext.SaveChangesAsync();
-        }
-    }
-}
-
-public class CertificateService : ICertificateService
-{
-    public Task<IEnumerable<CertificateDto>> GetAllCertificatesAsync(CertificateQueryParams queryParams)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<CertificateDto?> GetCertificateByIdAsync(Guid certificateId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<CertificateDto> UploadCertificateAsync(UploadCertificateRequest request, Guid uploadedBy)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<CertificateDto> UpdateCertificateAsync(Guid certificateId, UpdateCertificateRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task RevokeCertificateAsync(Guid certificateId, string reason, Guid revokedBy)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task DeleteCertificateAsync(Guid certificateId)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class KeyService : IKeyService
-{
-    public Task<IEnumerable<KeyDto>> GetAllKeysAsync(KeyQueryParams queryParams, Guid userId, bool isAdmin)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<KeyDto?> GetKeyByIdAsync(Guid keyId, Guid userId, bool isAdmin)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<KeyDto> CreateKeyAsync(CreateKeyRequest request, Guid createdBy)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<RetrieveKeyResponse> RetrieveKeyAsync(Guid keyId, Guid userId, string? reason)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<KeyDto> UpdateKeyAsync(Guid keyId, UpdateKeyRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<KeyDto> RotateKeyAsync(Guid keyId, string newValue, string? reason, Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task RevokeKeyAsync(Guid keyId, string reason, Guid revokedBy)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task DeleteKeyAsync(Guid keyId)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class EncryptionService : IEncryptionService
-{
-    public Task<(byte[] encrypted, byte[] iv, byte[] tag)> EncryptAsync(string plaintext, Guid certificateId)
-    {
-        // TODO: Implement AES-256-GCM encryption with certificate
-        throw new NotImplementedException();
-    }
-
-    public Task<string> DecryptAsync(byte[] ciphertext, byte[] iv, byte[] tag, Guid certificateId)
-    {
-        // TODO: Implement AES-256-GCM decryption with certificate
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> ValidateCertificateAsync(Guid certificateId)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class AuditService : IAuditService
-{
-    public Task LogAuditTrailAsync(AuditTrailDto auditTrail)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<AuditTrailDto>> GetAuditTrailsAsync(AuditQueryParams queryParams)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IEnumerable<KeyAccessLogDto>> GetKeyAccessLogsAsync(Guid keyId, Guid? userId)
-    {
-        throw new NotImplementedException();
     }
 }

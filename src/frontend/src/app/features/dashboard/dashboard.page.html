@@ -14,6 +14,25 @@
   </div>
 
   <div *ngIf="stats && !loading" class="dashboard-content">
+    <div class="error-banner" *ngIf="stats.expiringKeys30Days || stats.expiringCertificates30Days">
+      {{ stats.expiringKeys30Days }} anahtar ve {{ stats.expiringCertificates30Days }} sertifika 30 gün içinde sona eriyor.
+    </div>
+
+    <div class="activity-section" *ngIf="stats.upcomingExpiries?.length">
+      <h2>Expiring soon</h2>
+      <div class="activity-list">
+        <div *ngFor="let item of stats.upcomingExpiries" class="activity-item">
+          <div class="activity-details">
+            <p class="activity-action"><strong>{{ item.kind }}</strong>: {{ item.name }}</p>
+            <p class="activity-meta">
+              <span>{{ item.daysLeft }} gün</span>
+              <span class="timestamp">{{ item.expiresAt | date:'shortDate' }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Stats Cards -->
     <div class="stats-grid">
       <div class="stat-card keys-total">

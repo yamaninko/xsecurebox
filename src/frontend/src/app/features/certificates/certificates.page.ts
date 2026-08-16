@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../core/services/notification.service';
+import { CertificateService } from '../../core/services/certificate.service';
 
 interface Certificate {
   certificateId: string;
@@ -29,71 +30,35 @@ export class CertificatesPageComponent implements OnInit {
   certificates: Certificate[] = [];
   loading = true;
   showUploadModal = false;
+  newCertificate = { name: '', description: '', password: '', file: null as File | null };
 
-  newCertificate = {
-    name: '',
-    description: '',
-    file: null as File | null
-  };
+  constructor(
+    private notificationService: NotificationService,
+    private certificateService: CertificateService
+  ) {}
 
-  constructor(private notificationService: NotificationService) {}
-
-  ngOnInit() {
-    this.loadCertificates();
-  }
+  ngOnInit() { this.loadCertificates(); }
 
   loadCertificates() {
     this.loading = true;
-    setTimeout(() => {
-      this.certificates = [
-        {
-          certificateId: '1',
-          name: 'Production SSL Certificate',
-          description: 'Production encryption certificate for secure communications',
-          thumbprint: 'SHA256:ABC123DEF456...',
-          subject: 'CN=SecureBox Production',
-          issuer: 'CN=SecureBox Certificate Authority',
-          notBefore: new Date('2025-01-01'),
-          notAfter: new Date('2026-01-01'),
-          status: 'Active',
-          isForEncryption: true,
-          uploadedBy: 'admin',
-          createdAt: new Date('2025-01-01')
-        },
-        {
-          certificateId: '2',
-          name: 'Development Certificate',
-          description: 'Development environment certificate',
-          thumbprint: 'SHA256:XYZ789GHI012...',
-          subject: 'CN=SecureBox Development',
-          issuer: 'CN=SecureBox Certificate Authority',
-          notBefore: new Date('2025-01-01'),
-          notAfter: new Date('2025-12-31'),
-          status: 'Active',
-          isForEncryption: true,
-          uploadedBy: 'admin',
-          createdAt: new Date('2025-01-15')
-        }
-      ];
-      this.loading = false;
-    }, 500);
+    this.certificateService.getCertificates().subscribe({
+      next: (res) => { this.certificates = res.data || []; this.loading = false; },
+      error: (err) => {
+        this.notificationService.error('Hata', err.error?.error?.message || 'Sertifikalar yüklenemedi');
+        this.loading = false;
+      }
+    });
   }
 
-  openUploadModal() {
-    this.showUploadModal = true;
-  }
-
+  openUploadModal() { this.showUploadModal = true; }
   closeUploadModal() {
     this.showUploadModal = false;
-    this.newCertificate = {
-      name: '',
-      description: '',
-      file: null
-    };
+    this.newCertificate = { name: '', description: '', password: '', file: null };
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
     if (file) {
       this.newCertificate.file = file;
       if (!this.newCertificate.name) {
@@ -108,49 +73,57 @@ export class CertificatesPageComponent implements OnInit {
       return;
     }
 
-    console.log('Uploading certificate:', this.newCertificate);
-    this.notificationService.success(
-      'Sertifika Yüklendi',
-      `${this.newCertificate.name} başarıyla yüklendi!`
-    );
-    this.closeUploadModal();
-    this.loadCertificates();
+    const reader = new FileReader();
+    reader.onload = () => {
+      const bytes = new Uint8Array(reader.result as ArrayBuffer);
+      const payload = {
+        name: this.newCertificate.name,
+        description: this.newCertificate.description,
+        certificateFile: btoa(String.fromCharCode(...bytes)),
+        password: this.newCertificate.password || null,
+        isForEncryption: true,
+        isForSigning: false
+      };
+      this.certificateService.upload(payload).subscribe({
+        next: () => {
+          this.notificationService.success('Sertifika Yüklendi', this.newCertificate.name);
+          this.closeUploadModal();
+          this.loadCertificates();
+        },
+        error: (err) => this.notificationService.error('Hata', err.error?.error?.message || 'Yükleme başarısız')
+      });
+    };
+    reader.readAsArrayBuffer(this.newCertificate.file);
   }
 
   async revokeCertificate(cert: Certificate) {
     const confirmed = await this.notificationService.confirm({
       title: 'Sertifikayı İptal Et',
-      message: `${cert.name} sertifikasını iptal etmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve tüm ilişkili anahtarlar kullanılamaz hale gelecektir!`,
+      message: `${cert.name} iptal edilsin mi?`,
       confirmText: 'İptal Et',
       cancelText: 'Vazgeç',
       type: 'danger'
     });
-
-    if (confirmed) {
-      this.notificationService.success(
-        'Sertifika İptal Edildi',
-        `${cert.name} başarıyla iptal edildi.`
-      );
-      this.loadCertificates();
-    }
+    if (!confirmed) return;
+    this.certificateService.revoke(cert.certificateId, 'revoked-from-portal').subscribe({
+      next: () => { this.notificationService.success('İptal edildi', cert.name); this.loadCertificates(); },
+      error: (err) => this.notificationService.error('Hata', err.error?.error?.message || 'İptal başarısız')
+    });
   }
 
   async deleteCertificate(cert: Certificate) {
     const confirmed = await this.notificationService.confirm({
       title: 'Sertifikayı Sil',
-      message: `${cert.name} sertifikasını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!`,
+      message: `${cert.name} silinsin mi?`,
       confirmText: 'Sil',
       cancelText: 'Vazgeç',
       type: 'danger'
     });
-
-    if (confirmed) {
-      this.notificationService.success(
-        'Sertifika Silindi',
-        `${cert.name} başarıyla silindi.`
-      );
-      this.loadCertificates();
-    }
+    if (!confirmed) return;
+    this.certificateService.delete(cert.certificateId).subscribe({
+      next: () => { this.notificationService.success('Silindi', cert.name); this.loadCertificates(); },
+      error: (err) => this.notificationService.error('Hata', err.error?.error?.message || 'Silinemedi')
+    });
   }
 
   getStatusClass(status: string): string {

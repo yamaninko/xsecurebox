@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SecureBox.API.Security;
 using SecureBox.Core.DTOs;
 using SecureBox.Core.Interfaces;
 
@@ -113,6 +114,20 @@ public class UsersController : ControllerBase
             _logger.LogError(ex, "Delete user failed for userId: {UserId}", userId);
             return StatusCode(500, new { success = false, error = new { code = "DELETE_USER_ERROR", message = "An error occurred" } });
         }
+    }
+
+    [HttpPost("{userId:guid}/roles/{roleId:guid}")]
+    public async Task<ActionResult> AssignRole(Guid userId, Guid roleId)
+    {
+        await _userService.AssignRoleToUserAsync(userId, roleId, User.GetUserId());
+        return Ok(new { success = true, message = "Role assigned successfully" });
+    }
+
+    [HttpDelete("{userId:guid}/roles/{roleId:guid}")]
+    public async Task<ActionResult> RemoveRole(Guid userId, Guid roleId)
+    {
+        await _userService.RemoveRoleFromUserAsync(userId, roleId);
+        return Ok(new { success = true, message = "Role removed successfully" });
     }
 }
 

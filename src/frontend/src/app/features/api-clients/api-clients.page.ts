@@ -31,6 +31,7 @@ export class ApiClientsPageComponent implements OnInit {
   
   availableScopes = [
     { value: 'keys:read', label: 'Keys - Okuma', description: 'Anahtarları görüntüle' },
+    { value: 'keys:retrieve', label: 'Keys - Retrieve', description: 'Şifreli değeri al' },
     { value: 'keys:write', label: 'Keys - Yazma', description: 'Anahtar oluştur/güncelle' },
     { value: 'keys:delete', label: 'Keys - Silme', description: 'Anahtar sil' },
     { value: 'certs:read', label: 'Certificates - Okuma', description: 'Sertifikaları görüntüle' },

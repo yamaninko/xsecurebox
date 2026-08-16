@@ -37,18 +37,20 @@ describe('AuthService', () => {
   });
 
   it('should return true for isAuthenticated when token not expired', () => {
-    const token = makeJwtWithExp(3600); // valid for 1h
-    localStorage.setItem('access_token', token);
+    const token = makeJwtWithExp(3600);
+    (service as unknown as { accessToken: string }).accessToken = token;
     expect(service.isAuthenticated()).toBeTrue();
   });
 
-  it('should POST login and store tokens on success', () => {
+  it('should POST login and keep access token in memory', () => {
     const reqBody: LoginRequest = { username: 'alice', password: 'p@ss' };
     const user: User = {
       userId: '00000000-0000-0000-0000-000000000001',
       username: 'alice',
       email: 'alice@example.com',
-      roles: ['Client']
+      roles: ['Client'],
+      permissions: [],
+      mustChangePassword: false
     };
     const mock: { success: boolean; data: AuthResponse } = {
       success: true,
@@ -65,10 +67,12 @@ describe('AuthService', () => {
 
     const req = httpMock.expectOne(r => r.url.endsWith('/api/v1/auth/login'));
     expect(req.request.method).toBe('POST');
+    expect(req.request.withCredentials).toBeTrue();
     req.flush(mock);
 
-    expect(localStorage.getItem('access_token')).toBeTruthy();
-    expect(localStorage.getItem('refresh_token')).toBe('r-token');
+    expect(service.getAccessToken()).toBeTruthy();
+    expect(localStorage.getItem('access_token')).toBeNull();
+    expect(localStorage.getItem('refresh_token')).toBeNull();
   });
 });
 

@@ -82,7 +82,7 @@
                  id="certFile">
           <label for="certFile" class="file-input-label">
             <span class="file-icon">📁</span>
-            <span *ngIf="!newCertificate.file">Dosya Seç (.pem, .crt, .cer)</span>
+            <span *ngIf="!newCertificate.file">Dosya Seç (.pem, .crt, .cer, .pfx)</span>
             <span *ngIf="newCertificate.file">{{ newCertificate.file.name }}</span>
           </label>
         </div>
@@ -98,6 +98,10 @@
                placeholder="Örn: Production SSL Certificate">
       </div>
 
+      <div class="form-group">
+        <label>PFX şifresi (varsa)</label>
+        <input type="password" [(ngModel)]="newCertificate.password" name="password" class="form-input" placeholder="PFX/P12 parolası">
+      </div>
       <div class="form-group">
         <label>Açıklama</label>
         <textarea 

@@ -25,15 +25,15 @@ curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces" \
 
 # Step 3 - Create Harbor Secret
 echo "Step 3/10 - Creating Harbor registry secret..."
-DOCKER_AUTH=$(echo -n "$GTECH_REPO_USERNAME:$GTECH_REPO_TOKEN" | base64 -w 0)
-DOCKER_CONFIG=$(echo -n "{\"auths\":{\"$GTECH_REPO_URL\":{\"username\":\"$GTECH_REPO_USERNAME\",\"password\":\"$GTECH_REPO_TOKEN\",\"auth\":\"$DOCKER_AUTH\"}}}" | base64 -w 0)
+DOCKER_AUTH=$(echo -n "$REGISTRY_USERNAME:$REGISTRY_TOKEN" | base64 -w 0)
+DOCKER_CONFIG=$(echo -n "{\"auths\":{\"$REGISTRY_URL\":{\"username\":\"$REGISTRY_USERNAME\",\"password\":\"$REGISTRY_TOKEN\",\"auth\":\"$DOCKER_AUTH\"}}}" | base64 -w 0)
 curl -k -H "$AUTH_HEADER" -X POST "$KUBE_API/api/v1/namespaces/$KUBE_NAMESPACE/secrets" \
   -H "Content-Type:application/json" \
   -d "{\"apiVersion\":\"v1\",\"kind\":\"Secret\",\"type\":\"kubernetes.io/dockerconfigjson\",\"metadata\":{\"name\":\"harbor-registry-secret\"},\"data\":{\".dockerconfigjson\":\"$DOCKER_CONFIG\"}}" || echo "Secret exists"
 
 # Step 4 - Update Image Tags
 echo "Step 4/10 - Updating image tags to ${IMAGE_TAG}..."
-sed -i "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" kubernetes/base/*.yaml
+sed -i "s|\${REGISTRY_URL}|$REGISTRY_URL|g" kubernetes/base/*.yaml
 sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/api-deployment.yaml
 sed -i "s|:latest|:$IMAGE_TAG|g" kubernetes/base/portal-deployment.yaml
 

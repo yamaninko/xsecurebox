@@ -8,6 +8,8 @@ namespace SecureBox.Tests.Integration;
 
 public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProgram> where TProgram : class
 {
+    private readonly string _databaseName = $"InMemoryDbForTesting-{Guid.NewGuid()}";
+
     public CustomWebApplicationFactory()
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
@@ -16,6 +18,10 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("DisableHttpsRedirect", "true");
+        builder.UseSetting("Database:DefaultAdminPassword", "Admin@123");
+        builder.UseSetting("JwtSettings:SecretKey", "YourSuperSecretKeyMinimum32CharactersLongForHS256!");
+        builder.UseSetting("Encryption:KeyEncryptionKey", "SecureBox-Dev-KEK-32-bytes!!!!!!");
 
         builder.ConfigureServices(services =>
         {
@@ -29,18 +35,9 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
             services.AddDbContext<SecureBoxDbContext>(options =>
             {
-                options.UseInMemoryDatabase("InMemoryDbForTesting");
+                options.UseInMemoryDatabase(_databaseName);
                 options.ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
             });
-
-            var sp = services.BuildServiceProvider();
-
-            using (var scope = sp.CreateScope())
-            {
-                var scopedServices = scope.ServiceProvider;
-                var db = scopedServices.GetRequiredService<SecureBoxDbContext>();
-                db.Database.EnsureCreated();
-            }
         });
     }
 }

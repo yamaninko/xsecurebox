@@ -56,18 +56,18 @@ create_namespace() {
 create_harbor_secret() {
     print_info "Creating Harbor registry secret..."
     
-    if [ -z "$GTECH_REPO_URL" ] || [ -z "$GTECH_REPO_USERNAME" ] || [ -z "$GTECH_REPO_TOKEN" ]; then
+    if [ -z "$REGISTRY_URL" ] || [ -z "$REGISTRY_USERNAME" ] || [ -z "$REGISTRY_TOKEN" ]; then
         print_error "Harbor credentials not set. Please set:"
-        print_error "  export GTECH_REPO_URL=your-harbor-url"
-        print_error "  export GTECH_REPO_USERNAME=your-username"
-        print_error "  export GTECH_REPO_TOKEN=your-token"
+        print_error "  export REGISTRY_URL=your-harbor-url"
+        print_error "  export REGISTRY_USERNAME=your-username"
+        print_error "  export REGISTRY_TOKEN=your-token"
         exit 1
     fi
     
     kubectl create secret docker-registry harbor-registry-secret \
-        --docker-server=$GTECH_REPO_URL \
-        --docker-username=$GTECH_REPO_USERNAME \
-        --docker-password=$GTECH_REPO_TOKEN \
+        --docker-server=$REGISTRY_URL \
+        --docker-username=$REGISTRY_USERNAME \
+        --docker-password=$REGISTRY_TOKEN \
         --namespace=$NAMESPACE \
         --dry-run=client -o yaml | kubectl apply -f -
     
@@ -77,8 +77,8 @@ create_harbor_secret() {
 update_image_references() {
     print_info "Updating image references with Harbor URL..."
     
-    if [ -z "$GTECH_REPO_URL" ]; then
-        print_error "GTECH_REPO_URL not set"
+    if [ -z "$REGISTRY_URL" ]; then
+        print_error "REGISTRY_URL not set"
         exit 1
     fi
     
@@ -87,7 +87,7 @@ update_image_references() {
     cp -r kubernetes/base/* $TMP_DIR/
     
     # Replace placeholder with actual registry URL
-    find $TMP_DIR -type f -name '*.yaml' -exec sed -i.bak "s|\${GTECH_REPO_URL}|$GTECH_REPO_URL|g" {} \;
+    find $TMP_DIR -type f -name '*.yaml' -exec sed -i.bak "s|\${REGISTRY_URL}|$REGISTRY_URL|g" {} \;
     
     echo $TMP_DIR
 }
@@ -209,7 +209,7 @@ print_access_info() {
     echo ""
     echo "Default Credentials:"
     echo "  Username: admin"
-    echo "  Password: Admin@123"
+    echo "  Password: value of ADMIN_PASSWORD"
     echo ""
     echo "Useful Commands:"
     echo "  kubectl get pods -n $NAMESPACE"

@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+import { KeyService } from '../../core/services/key.service';
+import { CertificateService } from '../../core/services/certificate.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 interface Key {
   keyId: string;
@@ -35,124 +36,76 @@ interface Key {
 export class KeysPageComponent implements OnInit {
   keys: Key[] = [];
   filteredKeys: Key[] = [];
+  certificates: { certificateId: string; name: string }[] = [];
   loading = true;
   error: string | null = null;
-
-  // Filters
   searchTerm = '';
   selectedEnvironment = '';
   selectedStatus = '';
   selectedKeyType = '';
-
-  // Create Key Modal
   showCreateModal = false;
-  newKey = {
-    name: '',
-    description: '',
-    keyType: 'Password',
-    value: '',
-    certificateId: '',
-    encryptionAlgorithm: 'AES256',
-    environmentTag: 'DEV',
-    tags: [] as string[],
-    expiresAt: ''
-  };
-
-  // Retrieve Key Modal
+  newKey = this.emptyKey();
   showRetrieveModal = false;
   selectedKey: Key | null = null;
   retrievePassword = '';
+  retrieveReason = '';
   retrievedValue = '';
+  clipboardTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private keyService: KeyService,
+    private certificateService: CertificateService,
+    private notify: NotificationService
+  ) {}
 
   ngOnInit() {
     this.loadKeys();
+    this.certificateService.getCertificates().subscribe({
+      next: (res) => this.certificates = res.data || [],
+      error: () => undefined
+    });
+  }
+
+  emptyKey() {
+    return {
+      name: '',
+      description: '',
+      keyType: 'Password',
+      value: '',
+      certificateId: '',
+      encryptionAlgorithm: 'AES256',
+      environmentTag: 'DEV',
+      tags: [] as string[],
+      tagText: '',
+      expiresAt: ''
+    };
   }
 
   loadKeys() {
     this.loading = true;
     this.error = null;
-
-    // Mock data for now
-    setTimeout(() => {
-      this.keys = [
-        {
-          keyId: '1',
-          name: 'API_KEY_PRODUCTION',
-          description: 'Production API key for external services',
-          keyType: 'ApiKey',
-          encryptionAlgorithm: 'AES256',
-          environmentTag: 'PROD',
-          tags: ['api', 'production', 'critical'],
-          status: 'Active',
-          version: 1,
-          validFrom: new Date('2025-01-01'),
-          expiresAt: new Date('2026-01-01'),
-          certificateId: 'cert-1',
-          certificateName: 'Prod Cert 2025',
-          ownerUsername: 'admin',
-          createdAt: new Date('2025-01-01'),
-          lastAccessedAt: new Date('2025-11-07'),
-          accessCount: 42
-        },
-        {
-          keyId: '2',
-          name: 'DATABASE_PASSWORD_DEV',
-          description: 'Development database password',
-          keyType: 'Password',
-          encryptionAlgorithm: 'AES256',
-          environmentTag: 'DEV',
-          tags: ['database', 'dev'],
-          status: 'Active',
-          version: 2,
-          validFrom: new Date('2025-11-01'),
-          certificateId: 'cert-2',
-          certificateName: 'Dev Cert 2025',
-          ownerUsername: 'john.doe',
-          createdAt: new Date('2025-10-15'),
-          lastAccessedAt: new Date('2025-11-06'),
-          accessCount: 12
-        },
-        {
-          keyId: '3',
-          name: 'STRIPE_SECRET_KEY',
-          description: 'Stripe payment gateway secret',
-          keyType: 'Secret',
-          encryptionAlgorithm: 'AES256',
-          environmentTag: 'PROD',
-          tags: ['payment', 'stripe', 'production'],
-          status: 'Active',
-          version: 1,
-          validFrom: new Date('2025-09-01'),
-          certificateId: 'cert-1',
-          certificateName: 'Prod Cert 2025',
-          ownerUsername: 'admin',
-          createdAt: new Date('2025-09-01'),
-          accessCount: 8
-        }
-      ];
-      this.filteredKeys = [...this.keys];
-      this.loading = false;
-    }, 500);
+    this.keyService.getKeys().subscribe({
+      next: (res) => {
+        this.keys = res.data || [];
+        this.filteredKeys = [...this.keys];
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = err.error?.error?.message || 'Anahtarlar yüklenemedi';
+        this.loading = false;
+      }
+    });
   }
 
   applyFilters() {
     this.filteredKeys = this.keys.filter(key => {
-      const matchesSearch = !this.searchTerm || 
+      const matchesSearch = !this.searchTerm ||
         key.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         key.description?.toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchesEnvironment = !this.selectedEnvironment || 
-        key.environmentTag === this.selectedEnvironment;
-      
-      const matchesStatus = !this.selectedStatus || 
-        key.status === this.selectedStatus;
-      
-      const matchesKeyType = !this.selectedKeyType || 
-        key.keyType === this.selectedKeyType;
-
-      return matchesSearch && matchesEnvironment && matchesStatus && matchesKeyType;
+      return matchesSearch &&
+        (!this.selectedEnvironment || key.environmentTag === this.selectedEnvironment) &&
+        (!this.selectedStatus || key.status === this.selectedStatus) &&
+        (!this.selectedKeyType || key.keyType === this.selectedKeyType);
     });
   }
 
@@ -164,41 +117,35 @@ export class KeysPageComponent implements OnInit {
     this.filteredKeys = [...this.keys];
   }
 
-  openCreateModal() {
-    this.showCreateModal = true;
-  }
-
-  closeCreateModal() {
-    this.showCreateModal = false;
-    this.resetNewKey();
-  }
-
-  resetNewKey() {
-    this.newKey = {
-      name: '',
-      description: '',
-      keyType: 'Password',
-      value: '',
-      certificateId: '',
-      encryptionAlgorithm: 'AES256',
-      environmentTag: 'DEV',
-      tags: [],
-      expiresAt: ''
-    };
-  }
+  openCreateModal() { this.showCreateModal = true; }
+  closeCreateModal() { this.showCreateModal = false; this.newKey = this.emptyKey(); }
 
   createKey() {
-    // TODO: API call
-    console.log('Creating key:', this.newKey);
-    alert('Key created successfully!');
-    this.closeCreateModal();
-    this.loadKeys();
+    this.keyService.createKey({
+      name: this.newKey.name,
+      description: this.newKey.description,
+      keyType: this.newKey.keyType,
+      value: this.newKey.value,
+      certificateId: this.newKey.certificateId,
+      encryptionAlgorithm: this.newKey.encryptionAlgorithm,
+      environmentTag: this.newKey.environmentTag,
+      tags: this.newKey.tagText ? this.newKey.tagText.split(',').map(t => t.trim()).filter(Boolean) : [],
+      expiresAt: this.newKey.expiresAt || undefined
+    }).subscribe({
+      next: () => {
+        this.notify.success('Anahtar oluşturuldu', this.newKey.name);
+        this.closeCreateModal();
+        this.loadKeys();
+      },
+      error: (err) => this.notify.error('Hata', err.error?.error?.message || 'Anahtar oluşturulamadı')
+    });
   }
 
   openRetrieveModal(key: Key) {
     this.selectedKey = key;
     this.showRetrieveModal = true;
     this.retrievePassword = '';
+    this.retrieveReason = '';
     this.retrievedValue = '';
   }
 
@@ -207,65 +154,91 @@ export class KeysPageComponent implements OnInit {
     this.selectedKey = null;
     this.retrievePassword = '';
     this.retrievedValue = '';
+    if (this.clipboardTimer) {
+      clearTimeout(this.clipboardTimer);
+    }
   }
 
   retrieveKey() {
-    // TODO: API call with triple auth
-    console.log('Retrieving key:', this.selectedKey?.keyId, 'with password:', this.retrievePassword);
-    
-    // Mock retrieved value
-    this.retrievedValue = 'SuperSecretValue123!';
-    setTimeout(() => {
-      alert('Key retrieved successfully! Value copied to clipboard.');
-    }, 500);
+    if (!this.selectedKey) return;
+    this.keyService.retrieveKey(this.selectedKey.keyId, this.retrievePassword, this.retrieveReason).subscribe({
+      next: (res) => {
+        this.retrievedValue = res.data.value;
+        this.notify.success('Anahtar alındı', 'Bu işlem audit kaydına yazıldı.');
+      },
+      error: (err) => this.notify.error('Hata', err.error?.error?.message || 'Anahtar alınamadı')
+    });
   }
 
+  copyRetrievedValue() {
+    if (!this.retrievedValue) return;
+    navigator.clipboard.writeText(this.retrievedValue).then(() => {
+      this.notify.success('Kopyalandı', '30 saniye sonra panodan silinecek.');
+      if (this.clipboardTimer) clearTimeout(this.clipboardTimer);
+      this.clipboardTimer = setTimeout(() => {
+        navigator.clipboard.writeText('').catch(() => undefined);
+      }, 30000);
+    });
+  }
+
+  rotateTarget: Key | null = null;
+  rotateValue = '';
+  revokeTarget: Key | null = null;
+  revokeReason = '';
+
   rotateKey(key: Key) {
-    if (confirm(`Are you sure you want to rotate "${key.name}"? This will create a new version.`)) {
-      // TODO: API call
-      console.log('Rotating key:', key.keyId);
-      alert('Key rotated successfully!');
-      this.loadKeys();
-    }
+    this.rotateTarget = key;
+    this.rotateValue = '';
+  }
+
+  confirmRotate() {
+    if (!this.rotateTarget || !this.rotateValue) return;
+    this.keyService.rotateKey(this.rotateTarget.keyId, this.rotateValue, 'manual-rotate').subscribe({
+      next: () => {
+        this.notify.success('Döndürüldü', this.rotateTarget!.name);
+        this.rotateTarget = null;
+        this.loadKeys();
+      },
+      error: (err) => this.notify.error('Hata', err.error?.error?.message || 'Rotate başarısız')
+    });
   }
 
   revokeKey(key: Key) {
-    const reason = prompt(`Enter reason for revoking "${key.name}":`);
-    if (reason) {
-      // TODO: API call
-      console.log('Revoking key:', key.keyId, 'Reason:', reason);
-      alert('Key revoked successfully!');
-      this.loadKeys();
-    }
+    this.revokeTarget = key;
+    this.revokeReason = '';
+  }
+
+  confirmRevoke() {
+    if (!this.revokeTarget || !this.revokeReason) return;
+    this.keyService.revokeKey(this.revokeTarget.keyId, this.revokeReason).subscribe({
+      next: () => {
+        this.notify.success('İptal edildi', this.revokeTarget!.name);
+        this.revokeTarget = null;
+        this.loadKeys();
+      },
+      error: (err) => this.notify.error('Hata', err.error?.error?.message || 'İptal başarısız')
+    });
   }
 
   deleteKey(key: Key) {
-    if (confirm(`Are you sure you want to delete "${key.name}"? This action cannot be undone.`)) {
-      // TODO: API call
-      console.log('Deleting key:', key.keyId);
-      alert('Key deleted successfully!');
-      this.loadKeys();
-    }
+    if (!confirm(`"${key.name}" silinsin mi? Önce iptal edilmiş olmalı.`)) return;
+    this.keyService.deleteKey(key.keyId).subscribe({
+      next: () => { this.notify.success('Silindi', key.name); this.loadKeys(); },
+      error: (err) => this.notify.error('Hata', err.error?.error?.message || 'Silinemedi')
+    });
   }
 
   getStatusBadgeClass(status: string): string {
     const classes: Record<string, string> = {
-      'Active': 'badge-success',
-      'Expired': 'badge-warning',
-      'Revoked': 'badge-danger',
-      'Archived': 'badge-secondary'
+      Active: 'badge-success', Expired: 'badge-warning', Revoked: 'badge-danger', Archived: 'badge-secondary'
     };
     return classes[status] || 'badge-secondary';
   }
 
   getEnvironmentBadgeClass(env: string): string {
     const classes: Record<string, string> = {
-      'DEV': 'env-dev',
-      'TEST': 'env-test',
-      'UAT': 'env-uat',
-      'PROD': 'env-prod'
+      DEV: 'env-dev', TEST: 'env-test', UAT: 'env-uat', PROD: 'env-prod'
     };
     return classes[env] || 'env-dev';
   }
 }
-

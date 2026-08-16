@@ -1,117 +1,88 @@
-# 🔐 Secure Box - Yüksek Güvenlikli Anahtar Yönetim Sistemi
+# Secure Box
 
-> **Versiyon:** 1.0.0 MVP  
-> **Son Güncelleme:** 2025-11-07  
-> **Durum:** ✅ MVP Tamamlandı
+Encrypted key and certificate vault: ASP.NET 9 API + Angular portal + PostgreSQL + Redis.
 
-## 📝 Genel Bakış
+**License:** [MIT](LICENSE)
 
-Secure Box, kritik anahtarların (API keys, passwords, secrets, certificates) şifrelenmiş olarak saklanmasını ve yüksek güvenlik standartlarıyla API ve Portal üzerinden yönetimini sağlayan bir sistemdir.
+## Features
 
-**Varsayılan Giriş Bilgileri:**
-- **Kullanıcı Adı:** `admin`
-- **Şifre:** `Admin@123`
-- **Portal URL:** http://localhost
+- AES-256-GCM with RSA-OAEP wrapping of the data key (X.509 / PFX)
+- JWT access tokens, rotating refresh cookie, optional Redis blacklist
+- TOTP MFA, RBAC, permission policies
+- Key create / retrieve / rotate / revoke, certificate upload
+- PostgreSQL audit trail and key-access log
+- Login and retrieve rate limits
+- `/health/live` and `/health/ready`
 
-## Teknoloji Stack
+## Quick start
 
-### Backend
-- **ASP.NET 9** (C#)
-- **Entity Framework Core** (PostgreSQL için)
-- **JWT Authentication** (Bearer Token)
-- **Sertifika Tabanlı Şifreleme** (X.509)
+Requirements: Docker Compose, OpenSSL.
 
-### Frontend
-- **Angular** (son sürüm)
-- **Angular Material** (UI Components)
-- **RxJS** (Reactive Programming)
+```bash
+cp .env.example .env
+# Fill POSTGRES_PASSWORD, REDIS_PASSWORD, JWT_SECRET_KEY,
+# ENCRYPTION_KEK (32 characters), and ADMIN_PASSWORD.
 
-### Veritabanları ve Altyapı
-- **PostgreSQL**: Ana veri (kullanıcılar, sertifikalar, anahtarlar)
-- **Redis**: Session yönetimi ve cache
-- **MongoDB**: Log kayıtları
-- **RabbitMQ**: Asenkron mesajlaşma
-- **ELK Stack / OpenSearch**: Log analizi ve monitoring
+./scripts/start.sh
+```
 
-### Deployment
-- **Docker & Docker-Compose**
-- **Nginx**: Load Balancer
-- **TLS/SSL**: Tüm iletişimler şifreli
+Then open **https://localhost** (self-signed certificate).
 
-## Özellikler
+| Surface | URL |
+|---|---|
+| Portal | https://localhost |
+| API (via nginx) | https://localhost/api |
+| API direct | http://127.0.0.1:5002 |
+| Health | http://127.0.0.1:5002/health/live |
 
-- ✅ Sertifika tabanlı şifreleme
-- ✅ JWT ile authentication/authorization
-- ✅ Role-based access control (Admin, Client, Service)
-- ✅ Audit logging (tüm işlemler loglanır)
-- ✅ Sertifika yaşam döngüsü yönetimi
-- ✅ Anahtar yaşam döngüsü yönetimi
-- ✅ Portal UI (Angular)
-- ✅ High-availability deployment
-- ✅ Comprehensive monitoring
+First login: user `admin` and the `ADMIN_PASSWORD` you set. You will be asked to change the password and enable MFA.
 
-## Proje Yapısı
+Stop:
+
+```bash
+./scripts/stop.sh
+```
+
+## Configuration
+
+All secrets come from the environment (see `.env.example`). There are no usable default passwords in Compose.
+
+| Variable | Purpose |
+|---|---|
+| `POSTGRES_PASSWORD` | PostgreSQL password |
+| `REDIS_PASSWORD` | Redis `requirepass` |
+| `JWT_SECRET_KEY` | HMAC key, at least 32 characters |
+| `ENCRYPTION_KEK` | 32-byte UTF-8 or 32-byte base64 key-encryption key |
+| `ADMIN_PASSWORD` | Seeded admin password (must change on first login) |
+
+`ASPNETCORE_ENVIRONMENT=Production` refuses known development JWT/KEK/admin values.
+
+## Tests
+
+```bash
+dotnet test src/backend/SecureBox.sln
+```
+
+## Docs
+
+- [API](docs/03-api-endpoints.md)
+- [Schema](docs/02-database-schema.md)
+- [Security checklist](docs/08-security-checklist.md)
+- [CI](CI-CD-README.md)
+- [Vulnerability reports](SECURITY.md)
+
+## Layout
 
 ```
 secure-box/
-├── docs/                          # Tüm dokümantasyon
-│   ├── 01-component-diagram.md
-│   ├── 02-database-schema.md
-│   ├── 03-api-endpoints.md
-│   ├── 04-ui-design.md
-│   ├── 08-security-checklist.md
-│   ├── 09-testing-plan.md
-│   └── 10-feature-backlog.md
-├── src/
-│   ├── backend/                   # ASP.NET 9 API
-│   └── frontend/                  # Angular Portal
-├── infrastructure/
-│   ├── docker-compose.yml
-│   ├── nginx/
-│   ├── postgres/
-│   └── certificates/
-└── README.md
+├── src/backend/          # ASP.NET 9 solution
+├── src/frontend/          # Angular portal
+├── infrastructure/        # nginx, postgres init
+├── kubernetes/            # optional k8s manifests
+├── scripts/               # start, stop, backup, restore
+└── docs/
 ```
 
-## Hızlı Başlangıç
+## What this is not
 
-### Gereksinimler
-- Docker & Docker-Compose
-- .NET 9 SDK
-- Node.js & npm (Angular için)
-
-### Kurulum
-
-```bash
-# Projeyi klonlayın
-cd /Users/gtmac29/projects/secure-box
-
-# Docker-Compose ile tüm servisleri başlatın
-docker-compose up -d
-
-# Backend API: http://localhost:5000
-# Frontend Portal: http://localhost:4200
-```
-
-### Veritabanı Başlatma
-
-Backend servisi, PostgreSQL şemasını ve varsayılan admin kullanıcısını uygulama başlangıcında otomatik olarak oluşturur. 
-`appsettings.json` içindeki `Database.ApplyMigrationsOnStartup` ve `Database.SeedDefaultsOnStartup` ayarları (veya 
-environment değişkenleri `Database__ApplyMigrationsOnStartup`, `Database__SeedDefaultsOnStartup`) ile bu davranışı 
-aktif/pasif hale getirebilirsiniz. Kendi veritabanı otomasyonunuza sahipseniz bu ayarları `false` yapmanız yeterlidir.
-
-## Güvenlik
-
-Bu sistem en yüksek güvenlik standartlarıyla tasarlanmıştır:
-- TLS 1.3 zorunlu
-- Sertifika tabanlı şifreleme
-- Tüm işlemler audit log'lanır
-- Role-based access control
-- Key rotation politikaları
-- Sertifika yaşam döngüsü yönetimi
-
-Detaylı güvenlik bilgisi için: [Güvenlik Kontrol Listesi](docs/08-security-checklist.md)
-
-## Lisans
-
-Proprietary - Tüm hakları saklıdır.
+No HSM/KMS, no email/webhooks, no immutable (WORM) audit store. The KEK in your environment is the root of encryption; back it up separately from the database.

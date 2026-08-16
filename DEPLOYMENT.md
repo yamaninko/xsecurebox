@@ -31,7 +31,7 @@ docker-compose ps
 
 **Varsayılan Admin Hesabı:**
 - Kullanıcı: `admin`
-- Şifre: `Admin@123`
+- Şifre: `ADMIN_PASSWORD` environment variable
 
 ---
 

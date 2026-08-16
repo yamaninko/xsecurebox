@@ -149,7 +149,7 @@
 - [ ] **Security Training**: Developers trained on OWASP, secure coding
 
 #### CI/CD Security
-- [ ] **Pipeline Security**: Secure CI/CD pipelines (GitHub Actions, GitLab CI)
+- [ ] **Pipeline Security**: Secure CI/CD pipelines (GitHub Actions)
 - [ ] **Build Isolation**: Isolated build environments
 - [ ] **Signed Commits**: GPG-signed commits (future)
 - [ ] **Artifact Signing**: Docker images signed (Docker Content Trust)

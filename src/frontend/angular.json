@@ -28,12 +28,24 @@
               "src/styles.css"
             ],
             "scripts": []
-          }
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {}
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "secure-box-portal:build"
+            "buildTarget": "secure-box-portal:build:development"
           }
         }
       }

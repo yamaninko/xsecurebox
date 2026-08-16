@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../core/services/notification.service';
+import { UserService } from '../../core/services/user.service';
+import { RoleService } from '../../core/services/role.service';
 
 interface User {
   userId: string;
@@ -33,44 +35,41 @@ export class UsersPageComponent implements OnInit {
     password: '',
     firstName: '',
     lastName: '',
-    roles: [] as string[]
+    roles: [] as string[],
+    roleIds: [] as string[]
   };
 
-  constructor(private notificationService: NotificationService) {}
+  roles: { roleId: string; roleName: string }[] = [];
+
+  constructor(
+    private notificationService: NotificationService,
+    private userService: UserService,
+    private roleService: RoleService
+  ) {}
 
   ngOnInit() {
     this.loadUsers();
+    this.roleService.getRoles().subscribe({
+      next: (res) => this.roles = res.data || [],
+      error: () => undefined
+    });
   }
 
   loadUsers() {
     this.loading = true;
-    setTimeout(() => {
-      this.users = [
-        {
-          userId: '1',
-          username: 'admin',
-          email: 'admin@securebox.local',
-          firstName: 'System',
-          lastName: 'Administrator',
-          isActive: true,
-          roles: ['Admin'],
-          createdAt: new Date('2025-01-01'),
-          lastLoginAt: new Date('2025-11-07')
-        },
-        {
-          userId: '2',
-          username: 'john.doe',
-          email: 'john@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          isActive: true,
-          roles: ['Client'],
-          createdAt: new Date('2025-10-15'),
-          lastLoginAt: new Date('2025-11-06')
-        }
-      ];
-      this.loading = false;
-    }, 500);
+    this.userService.getUsers().subscribe({
+      next: (res) => { this.users = res.data || []; this.loading = false; },
+      error: () => { this.loading = false; this.notificationService.error('Hata', 'Kullanıcılar yüklenemedi'); }
+    });
+  }
+
+  toggleRole(roleId: string, event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    if (checked) {
+      this.newUser.roleIds = [...this.newUser.roleIds, roleId];
+    } else {
+      this.newUser.roleIds = this.newUser.roleIds.filter(id => id !== roleId);
+    }
   }
 
   openCreateModal() {
@@ -82,13 +81,21 @@ export class UsersPageComponent implements OnInit {
   }
 
   createUser() {
-    console.log('Creating user:', this.newUser);
-    this.notificationService.success(
-      'Kullanıcı Oluşturuldu',
-      `${this.newUser.username} başarıyla oluşturuldu!`
-    );
-    this.closeCreateModal();
-    this.loadUsers();
+    this.userService.create({
+      username: this.newUser.username,
+      email: this.newUser.email,
+      password: this.newUser.password,
+      firstName: this.newUser.firstName,
+      lastName: this.newUser.lastName,
+      roleIds: this.newUser.roleIds
+    }).subscribe({
+      next: () => {
+        this.notificationService.success('Kullanıcı Oluşturuldu', this.newUser.username);
+        this.closeCreateModal();
+        this.loadUsers();
+      },
+      error: (err) => this.notificationService.error('Hata', err.error?.error?.message || 'Oluşturulamadı')
+    });
   }
 
   async toggleUserStatus(user: User) {
@@ -101,11 +108,10 @@ export class UsersPageComponent implements OnInit {
     });
 
     if (confirmed) {
-      user.isActive = !user.isActive;
-      this.notificationService.success(
-        'Durum Değiştirildi',
-        `${user.username} ${user.isActive ? 'aktifleştirildi' : 'pasifleştirildi'}.`
-      );
+      this.userService.update(user.userId, { isActive: !user.isActive }).subscribe({
+        next: () => { this.notificationService.success('Durum Değiştirildi', user.username); this.loadUsers(); },
+        error: (err) => this.notificationService.error('Hata', err.error?.error?.message || 'Güncellenemedi')
+      });
     }
   }
 
@@ -119,11 +125,10 @@ export class UsersPageComponent implements OnInit {
     });
 
     if (confirmed) {
-      this.notificationService.success(
-        'Kullanıcı Silindi',
-        `${user.username} başarıyla silindi.`
-      );
-      this.loadUsers();
+      this.userService.delete(user.userId).subscribe({
+        next: () => { this.notificationService.success('Kullanıcı Silindi', user.username); this.loadUsers(); },
+        error: (err) => this.notificationService.error('Hata', err.error?.error?.message || 'Silinemedi')
+      });
     }
   }
 

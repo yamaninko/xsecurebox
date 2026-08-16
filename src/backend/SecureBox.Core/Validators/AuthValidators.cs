@@ -42,3 +42,48 @@ public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRe
         RuleFor(x => x.ConfirmPassword).Equal(x => x.NewPassword).WithMessage("Passwords do not match");
     }
 }
+
+public class CreateKeyRequestValidator : AbstractValidator<CreateKeyRequest>
+{
+    public CreateKeyRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.KeyType).NotEmpty();
+        RuleFor(x => x.Value).NotEmpty().MaximumLength(4096);
+        RuleFor(x => x.CertificateId).NotEmpty();
+        RuleFor(x => x.EnvironmentTag).NotEmpty();
+    }
+}
+
+public class RetrieveKeyRequestValidator : AbstractValidator<RetrieveKeyRequest>
+{
+    public RetrieveKeyRequestValidator()
+    {
+        RuleFor(x => x.Reason).MaximumLength(500);
+    }
+}
+
+public class UploadCertificateRequestValidator : AbstractValidator<UploadCertificateRequest>
+{
+    public UploadCertificateRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.CertificateFile).NotNull().Must(f => f is { Length: > 0 }).WithMessage("Certificate file is required");
+    }
+}
+
+public class RotateKeyRequestValidator : AbstractValidator<RotateKeyRequest>
+{
+    public RotateKeyRequestValidator()
+    {
+        RuleFor(x => x.NewValue).NotEmpty().MaximumLength(4096);
+    }
+}
+
+public class RevokeKeyRequestValidator : AbstractValidator<RevokeKeyRequest>
+{
+    public RevokeKeyRequestValidator()
+    {
+        RuleFor(x => x.Reason).NotEmpty();
+    }
+}

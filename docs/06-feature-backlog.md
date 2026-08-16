@@ -1,6 +1,6 @@
 # Secure Box - Feature Backlog
 
-## MVP Features (Current Sprint) ✅
+## Implemented (2026-08-16)
 
 ### Core Authentication
 - [x] User login with JWT tokens
