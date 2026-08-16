@@ -45,7 +45,9 @@ It is **not** a drop-in HashiCorp Vault clone. It is a smaller, full-stack vault
 - **Google Authenticator setup** — portal shows a local QR code, store links, and a 6-digit confirm field (secret never leaves the browser to a third-party QR API)
 - **Authorization** — Admin / Client / Service roles and permission policies; API clients use OAuth2 client-credentials + scopes (`keys:retrieve`)
 - **Private Ethereum integrity** — each secret is sealed as `keccak256(ciphertext \|\| iv \|\| tag)` on `SecureBoxRegistry`; retrieve fails if the hash does not match
-- **Admin Ethereum console** — live VM health, Solidity source, sealed keys, RPC/quorum/pause/owner, redeploy
+- **ETH orchestrator** — set VM count (1–7) in the portal; `eth-supervisor` starts peered Clique geth nodes
+- **ETH load balancer** — `eth-lb` (`least_conn`) so all VMs serve JSON-RPC
+- **Admin Ethereum console** — live telemetry (block, peers, sync, mining, latency), Solidity source, sealed keys, RPC/quorum/pause/owner, redeploy
 - **Audit** — every create/retrieve/revoke written to PostgreSQL
 - **Ops** — `/health/live`, `/health/ready`, rate limits, `scripts/backup.sh` / `restore.sh`
 - **No default passwords in the repo** — Compose fails if `.env` is empty
@@ -81,7 +83,9 @@ Open **https://localhost** (self-signed certificate — accept the browser warni
 | Portal | https://localhost |
 | API | https://localhost/api |
 | Health | http://127.0.0.1:5002/health/live |
-| Local ETH VM (Anvil) | http://127.0.0.1:8545 |
+| Sealer RPC (geth-1) | http://127.0.0.1:8545 |
+| ETH load balancer | http://127.0.0.1:8546 |
+| ETH supervisor | http://127.0.0.1:8800/status |
 | Ethereum admin UI | https://localhost/chain |
 
 First login: user `admin` and your `ADMIN_PASSWORD`. You must change the password, then enroll **Google Authenticator** on the MFA page (QR + 6-digit code). Admins then see **Ethereum** in the sidebar.
@@ -115,7 +119,18 @@ XSecureBox can seal every secret on a **private Ethereum VM** you control. The c
 
 **Create / rotate** registers the hash in `SecureBoxRegistry`. **Retrieve** recomputes the hash and asks the ETH node(s) to confirm before decryption. **Revoke** marks the on-chain record revoked. Tampering with the database ciphertext fails verification.
 
-Local Docker starts a **private Clique geth cluster** (chain id `4242`). On the Ethereum admin page set **VM sayısı** (1–7) and click **Uygula**: that many peered geth containers start (`securebox-eth-1` … `eth-N`). Node 1 seals blocks; the others sync the same contract state. Quorum defaults to a majority.
+Local Docker starts a **private Clique geth cluster** (chain id `4242`) plus an orchestrator and a load balancer:
+
+| Container | Role |
+|---|---|
+| `eth-supervisor` | Scales the cluster (`POST /scale`) and persists the desired VM count |
+| `securebox-eth-1` | Sealer (mines blocks, unlocks the operator key) |
+| `securebox-eth-2` … `eth-N` | Replicas, same genesis, peered via bootnode |
+| `eth-lb` | nginx `least_conn` in front of all node RPCs |
+
+On **Ethereum → VM sayısı → VM'leri başlat** (or **Kaydet**), the API calls the supervisor. That many geth containers start and join the same chain. Restarting the supervisor no longer resets the count to 1.
+
+JSON-RPC from the app goes through **`http://eth-lb:8545`**. Quorum checks still probe each VM.
 
 Contract: [`contracts/SecureBoxRegistry.sol`](contracts/SecureBoxRegistry.sol)
 
@@ -136,20 +151,21 @@ Redeploy publishes a **new** registry. Old seals stay on the old address.
 
 ## Admin Ethereum console
 
-Admins open **Ethereum** in the sidebar (`/chain`):
+Admins open **Ethereum** in the sidebar (`/chain`). The page refreshes every 8 seconds.
 
-- Live VM health (reachable, block number, chain id)
-- Contract address, `systemId`, owner, paused, deploy tx
+- Cluster summary: running / healthy VMs, supervisor up/down, load balancer up/down
+- Per-node table: name, role (sealer / replica / load-balancer), block, peer count, sync, mining, latency, client version
+- Contract: address, DB vs on-chain `systemId`, owner, paused, deploy tx (warns if the stored address is not readable — click **Yeni kontrat yayınla**)
 - Full Solidity source
 - Keys already sealed on chain
-- Edit RPC / quorum / pause / owner, or attach an existing contract
-- **Yeni kontrat yayınla** to deploy a fresh `SecureBoxRegistry`
+- Edit RPC / quorum / pause / owner, scale VMs, or attach an existing contract
 
 API (admin JWT):
 
 - `GET /api/v1/chain`
 - `PUT /api/v1/chain/settings`
 - `POST /api/v1/chain/redeploy`
+- `POST /api/v1/chain/cluster` `{ "nodeCount": 2 }`
 
 ---
 
@@ -195,7 +211,7 @@ The certificate **private key** is stored only if you upload a PFX/PEM with a ke
 - **Backend:** ASP.NET 9, EF Core, PostgreSQL, Redis, JWT, BCrypt, Nethereum
 - **Frontend:** Angular, Angular Material
 - **Edge:** Nginx (TLS 1.2 / 1.3), Docker Compose
-- **Integrity chain:** Foundry Anvil locally; any geth/besu RPC in production
+- **Integrity chain:** private Clique geth (`ethereum/client-go:v1.13.15`), `eth-supervisor`, nginx `eth-lb`
 - **Optional:** Kubernetes manifests under `kubernetes/`
 
 ---
@@ -242,6 +258,6 @@ cd xsecurebox && cp .env.example .env   # değerleri doldurun
 ./scripts/start.sh
 ```
 
-Portal: **https://localhost** — kullanıcı `admin`, şifre `.env` içindeki `ADMIN_PASSWORD`. İlk girişte Google Authenticator ile MFA kurulur. Admin menüsünde **Ethereum** ekranından çalışan VM’leri, kontrat kaynağını ve RPC/quorum/pause/owner parametrelerini yönetirsiniz.
+Portal: **https://localhost** — kullanıcı `admin`, şifre `.env` içindeki `ADMIN_PASSWORD`. İlk girişte Google Authenticator ile MFA kurulur. Admin menüsünde **Ethereum** ekranından VM sayısını (1–7) değiştirirsiniz; `eth-supervisor` geth düğümlerini aynı Clique zincirinde ayağa kaldırır, trafik `eth-lb` üzerinden yük dengelemesiyle gider. Sayfa her 8 saniyede blok, peer, sync, mining ve gecikme bilgilerini yeniler.
 
 Arama terimleri: açık kaynak secrets manager, self-hosted key vault, sertifika şifreleme, kendi sunucunda parola kasası, Docker secrets yönetimi, özel Ethereum doğrulama, Google Authenticator TOTP.
