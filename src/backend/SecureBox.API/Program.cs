@@ -221,6 +221,14 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<IKeyService, KeyService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+if (isTesting || !builder.Configuration.GetValue<bool>("Ethereum:Enabled"))
+{
+    builder.Services.AddScoped<IChainVerificationService, DisabledChainVerificationService>();
+}
+else
+{
+    builder.Services.AddScoped<IChainVerificationService, EthereumVerificationService>();
+}
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IApiClientService, ApiClientService>();
 builder.Services.AddScoped<IMetricsService, MetricsService>();
@@ -228,6 +236,10 @@ builder.Services.AddScoped<ILifecycleService, LifecycleService>();
 if (!isTesting)
 {
     builder.Services.AddHostedService<SecureBox.API.Hosted.LifecycleHostedService>();
+    if (builder.Configuration.GetValue<bool>("Ethereum:Enabled"))
+    {
+        builder.Services.AddHostedService<SecureBox.API.Hosted.EthereumBootstrapHostedService>();
+    }
 }
 
 builder.Services.AddSingleton<SecureBox.API.Health.PostgresHealthCheck>();

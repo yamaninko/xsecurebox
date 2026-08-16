@@ -84,6 +84,22 @@ Stop: `./scripts/stop.sh`
 
 ---
 
+## Private Ethereum integrity (institutional VMs)
+
+XSecureBox can seal every secret on a **private Ethereum VM** you control. The chain never sees plaintext or the KEK — only:
+
+- `keccak256(ciphertext || iv || tag)`
+- algorithm id (`AES256-GCM+RSA-OAEP-SHA256`)
+- this installation’s `systemId`
+
+**Create** registers the hash in `SecureBoxRegistry`. **Retrieve** recomputes the hash and asks the ETH node(s) to confirm before decryption. Tampering with the database ciphertext fails verification.
+
+Local Docker starts one Anvil node (`eth-1`, chain id `4242`). In the plant, point `Ethereum__RpcUrls__0`, `__1`, … at your dockerized geth/besu validators and set `Ethereum__Quorum` to how many must agree.
+
+Contract: [`contracts/SecureBoxRegistry.sol`](contracts/SecureBoxRegistry.sol)
+
+---
+
 ## How encryption works
 
 ```

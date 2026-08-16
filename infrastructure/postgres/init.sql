@@ -174,6 +174,9 @@ CREATE TABLE IF NOT EXISTS "Keys" (
     "DeletedAt" TIMESTAMP WITH TIME ZONE,
     "LastAccessedAt" TIMESTAMP WITH TIME ZONE,
     "AccessCount" BIGINT DEFAULT 0 NOT NULL,
+    "ChainPayloadHash" VARCHAR(80),
+    "ChainTxHash" VARCHAR(80),
+    "ChainBlockNumber" BIGINT,
     
     CONSTRAINT "fk_keys_certificate" FOREIGN KEY ("CertificateId") REFERENCES "Certificates"("CertificateId"),
     CONSTRAINT "fk_keys_owner" FOREIGN KEY ("OwnerUserId") REFERENCES "Users"("UserId"),

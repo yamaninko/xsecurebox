@@ -37,6 +37,10 @@ public class Key
     public DateTime? DeletedAt { get; set; }
     public DateTime? LastAccessedAt { get; set; }
     public long AccessCount { get; set; } = 0;
+
+    public string? ChainPayloadHash { get; set; }
+    public string? ChainTxHash { get; set; }
+    public long? ChainBlockNumber { get; set; }
     
     // Navigation properties
     public Certificate? Certificate { get; set; }

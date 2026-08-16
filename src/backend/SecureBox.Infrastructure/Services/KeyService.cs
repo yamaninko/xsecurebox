@@ -14,6 +14,7 @@ public class KeyService : IKeyService
     private readonly IEncryptionService _encryption;
     private readonly IAuthService _auth;
     private readonly IAuditService _audit;
+    private readonly IChainVerificationService _chain;
     private readonly ILogger<KeyService> _logger;
 
     public KeyService(
@@ -21,12 +22,14 @@ public class KeyService : IKeyService
         IEncryptionService encryption,
         IAuthService auth,
         IAuditService audit,
+        IChainVerificationService chain,
         ILogger<KeyService> logger)
     {
         _dbContext = dbContext;
         _encryption = encryption;
         _auth = auth;
         _audit = audit;
+        _chain = chain;
         _logger = logger;
     }
 
@@ -107,6 +110,7 @@ public class KeyService : IKeyService
 
         _dbContext.Keys.Add(key);
         await _dbContext.SaveChangesAsync();
+        await _chain.RegisterAsync(key.KeyId, encrypted, iv, tag);
 
         await _audit.LogAuditTrailAsync(new AuditTrailDto(
             createdBy,
@@ -157,6 +161,8 @@ public class KeyService : IKeyService
                     throw new UnauthorizedAccessException("Password verification failed");
                 }
             }
+
+            await _chain.EnsureVerifiedAsync(key.KeyId, key.EncryptedValue, key.EncryptionIV, key.EncryptionTag);
 
             var plaintext = await _encryption.DecryptAsync(
                 key.EncryptedValue,
@@ -284,6 +290,7 @@ public class KeyService : IKeyService
 
         _dbContext.Keys.Add(rotated);
         await _dbContext.SaveChangesAsync();
+        await _chain.RegisterAsync(rotated.KeyId, encrypted, iv, tag);
 
         await _audit.LogAuditTrailAsync(new AuditTrailDto(
             userId,
@@ -315,6 +322,7 @@ public class KeyService : IKeyService
         key.RevokedReason = reason;
         key.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
+        await _chain.RevokeAsync(keyId);
 
         await _audit.LogAuditTrailAsync(new AuditTrailDto(
             revokedBy,

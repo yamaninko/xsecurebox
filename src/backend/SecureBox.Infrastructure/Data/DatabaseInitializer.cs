@@ -86,6 +86,7 @@ public static class DatabaseInitializer
         }
 
         await EnsureMfaColumnsAsync(dbContext, logger, cancellationToken);
+        await EnsureChainColumnsAsync(dbContext, logger, cancellationToken);
 
         if (options.SeedDefaultsOnStartup)
         {
@@ -112,6 +113,33 @@ public static class DatabaseInitializer
             """,
             cancellationToken);
         logger.LogInformation("Ensured MFA columns on Users.");
+    }
+
+    private static async Task EnsureChainColumnsAsync(
+        SecureBoxDbContext dbContext,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        if (!dbContext.Database.IsRelational())
+        {
+            return;
+        }
+
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Keys" ADD COLUMN IF NOT EXISTS "ChainPayloadHash" VARCHAR(80);
+            ALTER TABLE "Keys" ADD COLUMN IF NOT EXISTS "ChainTxHash" VARCHAR(80);
+            ALTER TABLE "Keys" ADD COLUMN IF NOT EXISTS "ChainBlockNumber" BIGINT;
+            CREATE TABLE IF NOT EXISTS "ChainState" (
+                "Id" INT PRIMARY KEY,
+                "ContractAddress" VARCHAR(64),
+                "SystemId" VARCHAR(80),
+                "DeployTxHash" VARCHAR(80),
+                "UpdatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            cancellationToken);
+        logger.LogInformation("Ensured Ethereum commitment columns.");
     }
 
     private static async Task ApplyMigrationsAsync(

@@ -20,6 +20,7 @@ public class SecureBoxDbContext : DbContext
     public DbSet<AuditTrail> AuditTrails { get; set; }
     public DbSet<ApiClient> ApiClients { get; set; }
     public DbSet<ApiClientRequest> ApiClientRequests { get; set; }
+    public DbSet<ChainState> ChainStates { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -128,6 +129,12 @@ public class SecureBoxDbContext : DbContext
             entity.HasQueryFilter(e => e.Role.DeletedAt == null);
         });
         
+        modelBuilder.Entity<ChainState>(entity =>
+        {
+            entity.ToTable("ChainState");
+            entity.HasKey(e => e.Id);
+        });
+
         // ApiClient configuration
         modelBuilder.Entity<ApiClient>(entity =>
         {
