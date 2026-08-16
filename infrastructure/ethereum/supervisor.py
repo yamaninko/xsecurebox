@@ -10,7 +10,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 IMAGE = os.environ.get("GETH_IMAGE", "ethereum/client-go:v1.13.15")
 NETWORK = os.environ.get("ETH_NETWORK", "secure-box_backend-network")
-ETH_DIR = os.environ.get("ETH_DIR", "/ethereum")
+ETH_DIR = "/ethereum"
+ETH_DIR_HOST = os.environ.get("ETH_DIR_HOST", os.environ.get("ETH_DIR", "/ethereum"))
 MAX_NODES = int(os.environ.get("MAX_NODES", "7"))
 PREFIX = "securebox-eth-"
 
@@ -80,7 +81,7 @@ def start_node(index: int, bootnode: str | None) -> None:
         "--restart", "unless-stopped",
         "-e", f"NODE_INDEX={index}",
         "-v", f"securebox-eth-data-{index}:/data",
-        "-v", f"{ETH_DIR}:/ethereum:ro",
+        "-v", f"{ETH_DIR_HOST}:/ethereum:ro",
         "--entrypoint", "/bin/sh",
     ]
     if index == 1:
@@ -98,18 +99,64 @@ def stop_node(index: int) -> None:
     run(["docker", "rm", "-f", f"{PREFIX}{index}"], check=False)
 
 
+def persist_desired(count: int) -> None:
+    path = os.path.join(ETH_DIR, "desired-count")
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(str(count))
+    except OSError as ex:
+        print("persist desired failed:", ex)
+
+
+def read_desired() -> int:
+    path = os.path.join(ETH_DIR, "desired-count")
+    try:
+        return max(1, min(MAX_NODES, int(open(path, encoding="utf-8").read().strip())))
+    except Exception:
+        return int(os.environ.get("INITIAL_NODES", "1"))
+
+
+def write_lb_config(count: int) -> None:
+    servers = "\n".join(f"        server {PREFIX}{i}:8545 max_fails=2 fail_timeout=5s;" for i in range(1, count + 1))
+    conf = f"""upstream eth_cluster {{
+        least_conn;
+{servers}
+}}
+server {{
+    listen 8545;
+    location / {{
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 30s;
+        proxy_pass http://eth_cluster;
+    }}
+}}
+"""
+    path = os.path.join(ETH_DIR, "lb.conf")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(conf)
+    run(["docker", "exec", "securebox-eth-lb", "nginx", "-s", "reload"], check=False)
+
+
 def scale(count: int) -> dict:
     count = max(1, min(MAX_NODES, int(count)))
+    print(f"scaling cluster to {count}")
+    persist_desired(count)
     start_node(1, None)
     enode = bootnode_enode()
     current = running_indices()
     for i in range(2, count + 1):
+        print(f"starting node {i}")
         start_node(i, enode)
     for i in current:
         if i > count:
+            print(f"stopping node {i}")
             stop_node(i)
+    write_lb_config(count)
     nodes = [{"index": i, "name": f"{PREFIX}{i}", "url": f"http://{PREFIX}{i}:8545"} for i in range(1, count + 1)]
-    return {"count": count, "max": MAX_NODES, "bootnode": enode, "nodes": nodes}
+    return {"count": count, "max": MAX_NODES, "bootnode": enode, "loadBalancer": "http://eth-lb:8545", "nodes": nodes}
 
 
 def status() -> dict:
@@ -165,7 +212,7 @@ if __name__ == "__main__":
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f"eth-supervisor listening on {port}, network={NETWORK}")
     try:
-        scale(int(os.environ.get("INITIAL_NODES", "1")))
+        scale(read_desired())
         print("initial cluster ready")
     except Exception as ex:  # noqa: BLE001
         print("initial scale failed:", ex)

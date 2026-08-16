@@ -19,8 +19,8 @@
       <label>VM sayısı
         <input type="number" min="1" [max]="data.maxNodeCount || 7" [(ngModel)]="form.nodeCount">
       </label>
-      <button class="btn" type="button" (click)="scale()" [disabled]="saving">Uygula</button>
-      <span class="muted">Çalışan: {{ data.runningNodeCount || data.nodes?.length || 0 }} / {{ data.maxNodeCount || 7 }}</span>
+      <button class="btn" type="button" (click)="scale()" [disabled]="saving">VM'leri başlat</button>
+      <span class="muted">Çalışan: {{ data.runningNodeCount || data.nodes?.length || 0 }} / {{ data.maxNodeCount || 7 }} · trafik: eth-lb (least_conn)</span>
     </div>
   </section>
 

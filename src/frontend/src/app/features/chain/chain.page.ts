@@ -52,6 +52,27 @@ export class ChainPageComponent implements OnInit {
 
   save(): void {
     this.saving = true;
+    const afterSave = () => {
+      const desired = Number(this.form.nodeCount);
+      const running = this.data?.runningNodeCount || this.data?.nodes?.length || 0;
+      if (desired && desired !== running) {
+        this.chain.scale(desired).subscribe({
+          next: (res) => {
+            this.data = res.data;
+            this.syncForm();
+            this.saving = false;
+            this.notify.success('Kaydedildi', `${this.data.runningNodeCount} ETH VM + load balancer`);
+          },
+          error: (err) => {
+            this.saving = false;
+            this.notify.error('Hata', err.error?.error?.message || 'VM kümesi başlatılamadı');
+          }
+        });
+        return;
+      }
+      this.saving = false;
+      this.notify.success('Kaydedildi', 'ETH parametreleri güncellendi');
+    };
     this.chain.updateSettings({
       rpcUrlsText: this.form.rpcUrlsText,
       quorum: Number(this.form.quorum),
@@ -64,8 +85,7 @@ export class ChainPageComponent implements OnInit {
       next: (res) => {
         this.data = res.data;
         this.syncForm();
-        this.saving = false;
-        this.notify.success('Kaydedildi', 'ETH parametreleri güncellendi');
+        afterSave();
       },
       error: (err) => {
         this.saving = false;

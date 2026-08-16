@@ -426,7 +426,9 @@ public sealed class EthereumVerificationService : IChainVerificationService
             _db.ChainStates.Add(state);
         }
 
-        state.RpcUrls = string.Join("\n", urls.Where(u => !string.IsNullOrWhiteSpace(u)));
+        var all = new List<string> { "http://eth-lb:8545" };
+        all.AddRange(urls.Where(u => !string.IsNullOrWhiteSpace(u) && !u.Contains("eth-lb", StringComparison.Ordinal)));
+        state.RpcUrls = string.Join("\n", all);
         if (!state.Quorum.HasValue || state.Quorum.Value > urls.Count)
         {
             state.Quorum = Math.Max(1, (urls.Count + 1) / 2);
