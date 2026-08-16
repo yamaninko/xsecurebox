@@ -152,7 +152,7 @@ public class AuthService : IAuthService
         user.MfaEnabled = false;
         user.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
-        return new MfaSetupDto(secret, Totp.OtpAuthUri("SecureBox", user.Username, secret));
+        return new MfaSetupDto(secret, Totp.OtpAuthUri("XSecureBox", user.Username, secret));
     }
 
     public async Task EnableMfaAsync(Guid userId, string code)
