@@ -22,7 +22,8 @@ export class ChainPageComponent implements OnInit {
     requireOnRetrieve: true,
     contractAddress: '',
     paused: false,
-    newOwner: ''
+    newOwner: '',
+    nodeCount: 1
   };
 
   constructor(
@@ -73,6 +74,27 @@ export class ChainPageComponent implements OnInit {
     });
   }
 
+  scale(): void {
+    const n = Number(this.form.nodeCount);
+    if (n < 1 || n > (this.data?.maxNodeCount || 7)) {
+      this.notify.error('Geçersiz', 'VM sayısı 1-7 arası olmalı');
+      return;
+    }
+    this.saving = true;
+    this.chain.scale(n).subscribe({
+      next: (res) => {
+        this.data = res.data;
+        this.syncForm();
+        this.saving = false;
+        this.notify.success('ETH kümesi', `${this.data.runningNodeCount} VM çalışıyor ve birbirine bağlı`);
+      },
+      error: (err) => {
+        this.saving = false;
+        this.notify.error('Hata', err.error?.error?.message || 'VM kümesi başlatılamadı');
+      }
+    });
+  }
+
   redeploy(): void {
     if (!confirm('Yeni kontrat yayınlansın mı? Eski mühürler eski adreste kalır.')) {
       return;
@@ -103,5 +125,6 @@ export class ChainPageComponent implements OnInit {
     this.form.contractAddress = this.data.contractAddress || '';
     this.form.paused = !!this.data.paused;
     this.form.newOwner = '';
+    this.form.nodeCount = this.data.runningNodeCount || this.data.nodes?.length || 1;
   }
 }

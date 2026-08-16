@@ -12,6 +12,18 @@
 
   <p class="banner" *ngIf="data && !data.enabled">Ethereum doğrulama kapalı. Compose’da Ethereum__Enabled=true olmalı.</p>
 
+  <section class="card scale-card" *ngIf="data">
+    <h2>ETH VM kümesi</h2>
+    <p class="muted">Sayıyı değiştirince o kadar geth düğümü aynı özel zincirde (Clique, chainId 4242) ayağa kalkar ve birbirine bağlanır.</p>
+    <div class="scale-row">
+      <label>VM sayısı
+        <input type="number" min="1" [max]="data.maxNodeCount || 7" [(ngModel)]="form.nodeCount">
+      </label>
+      <button class="btn" type="button" (click)="scale()" [disabled]="saving">Uygula</button>
+      <span class="muted">Çalışan: {{ data.runningNodeCount || data.nodes?.length || 0 }} / {{ data.maxNodeCount || 7 }}</span>
+    </div>
+  </section>
+
   <section class="grid" *ngIf="data">
     <article class="card">
       <h2>Düğümler</h2>

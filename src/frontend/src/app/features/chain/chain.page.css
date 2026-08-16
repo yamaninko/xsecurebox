@@ -3,6 +3,8 @@
 .head h1 { margin: 0 0 4px; font-size: 24px; }
 .head p { margin: 0; color: #64748b; }
 .actions { display: flex; gap: 8px; }
+.scale-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.scale-row label { min-width: 120px; }
 .btn { background: #512da8; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
 .btn.ghost { background: #fff; color: #512da8; border: 1px solid #d1c4e9; }
 .btn.danger { background: #b71c1c; }

@@ -115,7 +115,7 @@ XSecureBox can seal every secret on a **private Ethereum VM** you control. The c
 
 **Create / rotate** registers the hash in `SecureBoxRegistry`. **Retrieve** recomputes the hash and asks the ETH node(s) to confirm before decryption. **Revoke** marks the on-chain record revoked. Tampering with the database ciphertext fails verification.
 
-Local Docker starts one Anvil node (`eth-1`, chain id `4242`). In the plant, add more dockerized geth/besu validators and list them as RPC URLs (env or the admin console). Set **Quorum** to how many must agree.
+Local Docker starts a **private Clique geth cluster** (chain id `4242`). On the Ethereum admin page set **VM sayısı** (1–7) and click **Uygula**: that many peered geth containers start (`securebox-eth-1` … `eth-N`). Node 1 seals blocks; the others sync the same contract state. Quorum defaults to a majority.
 
 Contract: [`contracts/SecureBoxRegistry.sol`](contracts/SecureBoxRegistry.sol)
 

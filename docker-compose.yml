@@ -36,20 +36,29 @@ services:
       timeout: 3s
       retries: 5
 
-  eth-1:
-    image: ghcr.io/foundry-rs/foundry:latest
-    container_name: securebox-eth-1
-    entrypoint: ["anvil"]
-    command: ["--host", "0.0.0.0", "--port", "8545", "--chain-id", "4242", "--block-time", "1"]
+  eth-supervisor:
+    build:
+      context: ./infrastructure/ethereum
+      dockerfile: Dockerfile
+    container_name: securebox-eth-supervisor
+    environment:
+      ETH_NETWORK: ${COMPOSE_PROJECT_NAME:-secure-box}_backend-network
+      ETH_DIR: ${PWD}/infrastructure/ethereum
+      INITIAL_NODES: "1"
+      MAX_NODES: "7"
+      GETH_IMAGE: ethereum/client-go:v1.13.15
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infrastructure/ethereum:/ethereum:ro
     ports:
-      - "127.0.0.1:8545:8545"
+      - "127.0.0.1:8800:8800"
     networks:
       - backend-network
     healthcheck:
-      test: ["CMD", "cast", "block-number", "--rpc-url", "http://127.0.0.1:8545"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8800/health')"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 30
 
   api-1:
     build:
@@ -73,7 +82,8 @@ services:
       - Database__SeedDefaultsOnStartup=true
       - Ethereum__Enabled=true
       - Ethereum__ChainId=4242
-      - Ethereum__RpcUrls__0=http://eth-1:8545
+      - Ethereum__RpcUrls__0=http://securebox-eth-1:8545
+      - Ethereum__SupervisorUrl=http://eth-supervisor:8800
       - Ethereum__Quorum=1
       - Ethereum__RequireOnRetrieve=true
       - Ethereum__SystemName=xsecurebox
@@ -90,7 +100,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      eth-1:
+      eth-supervisor:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5000/health/live || exit 1"]
@@ -120,7 +130,8 @@ services:
       - Database__SeedDefaultsOnStartup=true
       - Ethereum__Enabled=true
       - Ethereum__ChainId=4242
-      - Ethereum__RpcUrls__0=http://eth-1:8545
+      - Ethereum__RpcUrls__0=http://securebox-eth-1:8545
+      - Ethereum__SupervisorUrl=http://eth-supervisor:8800
       - Ethereum__Quorum=1
       - Ethereum__RequireOnRetrieve=true
       - Ethereum__SystemName=xsecurebox
@@ -135,7 +146,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      eth-1:
+      eth-supervisor:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5000/health/live || exit 1"]

@@ -30,7 +30,7 @@ is_service_running() {
   docker ps --format '{{.Names}}' | grep -q "^${container_name}$"
 }
 
-INFRA_SERVICES=("postgres" "redis" "eth-1")
+INFRA_SERVICES=("postgres" "redis" "eth-supervisor")
 APP_SERVICES=("api-1" "api-2" "portal" "nginx")
 DO_BUILD=0
 

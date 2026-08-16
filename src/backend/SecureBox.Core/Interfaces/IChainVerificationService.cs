@@ -17,4 +17,6 @@ public interface IChainVerificationService
     Task<ChainDashboardDto> UpdateSettingsAsync(ChainSettingsRequest request, CancellationToken cancellationToken = default);
 
     Task<ChainDashboardDto> RedeployAsync(string? systemName, CancellationToken cancellationToken = default);
+
+    Task<ChainDashboardDto> ScaleClusterAsync(int nodeCount, CancellationToken cancellationToken = default);
 }

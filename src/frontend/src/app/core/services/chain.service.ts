@@ -20,4 +20,8 @@ export class ChainService {
   redeploy(systemName?: string): Observable<any> {
     return this.http.post(`${this.API_URL}/redeploy`, { systemName });
   }
+
+  scale(nodeCount: number): Observable<any> {
+    return this.http.post(`${this.API_URL}/cluster`, { nodeCount });
+  }
 }

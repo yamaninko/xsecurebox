@@ -37,4 +37,11 @@ public class ChainController : ControllerBase
         var data = await _chain.RedeployAsync(request?.SystemName);
         return Ok(new { success = true, data, message = "Kontrat yeniden yayınlandı" });
     }
+
+    [HttpPost("cluster")]
+    public async Task<ActionResult> Scale([FromBody] ChainScaleRequest request)
+    {
+        var data = await _chain.ScaleClusterAsync(request.NodeCount);
+        return Ok(new { success = true, data, message = $"{data.RunningNodeCount} ETH VM çalışıyor" });
+    }
 }

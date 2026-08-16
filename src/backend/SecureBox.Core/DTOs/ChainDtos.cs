@@ -32,8 +32,12 @@ public record ChainDashboardDto(
     string ContractSource,
     string Abi,
     IReadOnlyList<ChainNodeDto> Nodes,
-    IReadOnlyList<SealedKeyDto> SealedKeys
+    IReadOnlyList<SealedKeyDto> SealedKeys,
+    int RunningNodeCount = 0,
+    int MaxNodeCount = 7
 );
+
+public record ChainScaleRequest(int NodeCount);
 
 public record ChainSettingsRequest(
     string? RpcUrlsText,

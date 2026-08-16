@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -34,8 +35,11 @@ public sealed class DisabledChainVerificationService : IChainVerificationService
     public Task<ChainDashboardDto> RedeployAsync(string? systemName, CancellationToken cancellationToken = default) =>
         Task.FromResult(EmptyDashboard());
 
+    public Task<ChainDashboardDto> ScaleClusterAsync(int nodeCount, CancellationToken cancellationToken = default) =>
+        Task.FromResult(EmptyDashboard());
+
     private static ChainDashboardDto EmptyDashboard() =>
-        new(false, null, null, null, null, null, null, 0, 1, false, "", "", Ethereum.EthereumArtifacts.Source, Ethereum.EthereumArtifacts.Abi, Array.Empty<ChainNodeDto>(), Array.Empty<SealedKeyDto>());
+        new(false, null, null, null, null, null, null, 0, 1, false, "", "", Ethereum.EthereumArtifacts.Source, Ethereum.EthereumArtifacts.Abi, Array.Empty<ChainNodeDto>(), Array.Empty<SealedKeyDto>(), 0, 7);
 }
 
 public sealed class EthereumVerificationService : IChainVerificationService
@@ -275,6 +279,7 @@ public sealed class EthereumVerificationService : IChainVerificationService
             .ToListAsync(cancellationToken);
 
         var account = new Account(_privateKey, runtime.ChainId);
+        var cluster = await SupervisorStatusAsync(cancellationToken);
         return new ChainDashboardDto(
             IsEnabled,
             runtime.ContractAddress,
@@ -291,7 +296,9 @@ public sealed class EthereumVerificationService : IChainVerificationService
             EthereumArtifacts.Source,
             EthereumArtifacts.Abi,
             nodes,
-            sealedKeys);
+            sealedKeys,
+            cluster.Count,
+            cluster.Max);
     }
 
     public async Task<ChainDashboardDto> UpdateSettingsAsync(ChainSettingsRequest request, CancellationToken cancellationToken = default)
@@ -378,6 +385,81 @@ public sealed class EthereumVerificationService : IChainVerificationService
         await _db.SaveChangesAsync(cancellationToken);
         await EnsureContractAsync(cancellationToken);
         return await GetDashboardAsync(cancellationToken);
+    }
+
+    public async Task<ChainDashboardDto> ScaleClusterAsync(int nodeCount, CancellationToken cancellationToken = default)
+    {
+        var supervisor = SupervisorUrl();
+        if (string.IsNullOrWhiteSpace(supervisor))
+        {
+            throw new InvalidOperationException("Ethereum supervisor is not configured");
+        }
+
+        using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(4) };
+        var response = await http.PostAsJsonAsync(
+            supervisor.TrimEnd('/') + "/scale",
+            new { count = nodeCount },
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(body);
+        }
+
+        using var doc = System.Text.Json.JsonDocument.Parse(body);
+        var urls = new List<string>();
+        if (doc.RootElement.TryGetProperty("nodes", out var nodesEl))
+        {
+            foreach (var node in nodesEl.EnumerateArray())
+            {
+                if (node.TryGetProperty("url", out var url))
+                {
+                    urls.Add(url.GetString() ?? "");
+                }
+            }
+        }
+
+        var state = await _db.ChainStates.FirstOrDefaultAsync(cancellationToken);
+        if (state is null)
+        {
+            state = new ChainState { Id = 1 };
+            _db.ChainStates.Add(state);
+        }
+
+        state.RpcUrls = string.Join("\n", urls.Where(u => !string.IsNullOrWhiteSpace(u)));
+        if (!state.Quorum.HasValue || state.Quorum.Value > urls.Count)
+        {
+            state.Quorum = Math.Max(1, (urls.Count + 1) / 2);
+        }
+
+        state.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+        return await GetDashboardAsync(cancellationToken);
+    }
+
+    private string? SupervisorUrl() => _configuration["Ethereum:SupervisorUrl"];
+
+    private async Task<(int Count, int Max)> SupervisorStatusAsync(CancellationToken cancellationToken)
+    {
+        var supervisor = SupervisorUrl();
+        if (string.IsNullOrWhiteSpace(supervisor))
+        {
+            return (0, 7);
+        }
+
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            var json = await http.GetStringAsync(supervisor.TrimEnd('/') + "/status", cancellationToken);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var count = doc.RootElement.TryGetProperty("count", out var c) ? c.GetInt32() : 0;
+            var max = doc.RootElement.TryGetProperty("max", out var m) ? m.GetInt32() : 7;
+            return (count, max);
+        }
+        catch
+        {
+            return (0, 7);
+        }
     }
 
     private async Task<Runtime> LoadRuntimeAsync(CancellationToken cancellationToken)
