@@ -135,8 +135,16 @@ public static class DatabaseInitializer
                 "ContractAddress" VARCHAR(64),
                 "SystemId" VARCHAR(80),
                 "DeployTxHash" VARCHAR(80),
+                "RpcUrls" TEXT,
+                "Quorum" INT,
+                "SystemName" VARCHAR(120),
+                "RequireOnRetrieve" BOOLEAN,
                 "UpdatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
+            ALTER TABLE "ChainState" ADD COLUMN IF NOT EXISTS "RpcUrls" TEXT;
+            ALTER TABLE "ChainState" ADD COLUMN IF NOT EXISTS "Quorum" INT;
+            ALTER TABLE "ChainState" ADD COLUMN IF NOT EXISTS "SystemName" VARCHAR(120);
+            ALTER TABLE "ChainState" ADD COLUMN IF NOT EXISTS "RequireOnRetrieve" BOOLEAN;
             """,
             cancellationToken);
         logger.LogInformation("Ensured Ethereum commitment columns.");

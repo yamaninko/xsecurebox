@@ -16,7 +16,8 @@ export const routes: Routes = [
       { path: 'users', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/users/users.module').then(m => m.UsersModule) },
       { path: 'roles', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/roles/roles.module').then(m => m.RolesModule) },
       { path: 'api-clients', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/api-clients/api-clients.module').then(m => m.ApiClientsModule) },
-      { path: 'audit', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/audit/audit.module').then(m => m.AuditModule) }
+      { path: 'audit', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/audit/audit.module').then(m => m.AuditModule) },
+      { path: 'chain', canActivate: [AuthGuard], data: { roles: ['Admin'] }, loadChildren: () => import('./features/chain/chain.module').then(m => m.ChainModule) }
     ]
   },
   {

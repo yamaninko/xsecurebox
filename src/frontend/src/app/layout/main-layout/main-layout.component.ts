@@ -28,7 +28,8 @@ export class MainLayoutComponent implements OnInit {
     { icon: '🔌', label: 'API Clients', route: '/api-clients', roles: ['Admin'] },
     { icon: '👥', label: 'Users', route: '/users', roles: ['Admin'] },
     { icon: '🛡️', label: 'Roles', route: '/roles', roles: ['Admin'] },
-    { icon: '📋', label: 'Audit', route: '/audit' }
+    { icon: '📋', label: 'Audit', route: '/audit', roles: ['Admin'] },
+    { icon: '⛓️', label: 'Ethereum', route: '/chain', roles: ['Admin'] }
   ];
 
   constructor(

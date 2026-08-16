@@ -6,6 +6,7 @@ pragma solidity ^0.8.20;
 contract SecureBoxRegistry {
     bytes32 public immutable systemId;
     address public owner;
+    bool public paused;
 
     struct Record {
         bytes32 payloadHash;
@@ -31,7 +32,17 @@ contract SecureBoxRegistry {
         owner = msg.sender;
     }
 
+    function setPaused(bool value) external onlyOwner {
+        paused = value;
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "owner");
+        owner = newOwner;
+    }
+
     function register(bytes32 keyId, bytes32 payloadHash, bytes32 algorithmId) external onlyOwner {
+        require(!paused, "paused");
         require(keyId != bytes32(0), "keyId");
         require(payloadHash != bytes32(0), "hash");
         require(records[keyId].registeredAt == 0, "exists");
@@ -47,7 +58,7 @@ contract SecureBoxRegistry {
 
     function verify(bytes32 keyId, bytes32 payloadHash) external view returns (bool ok) {
         Record memory rec = records[keyId];
-        return rec.registeredAt != 0 && !rec.revoked && rec.payloadHash == payloadHash;
+        return !paused && rec.registeredAt != 0 && !rec.revoked && rec.payloadHash == payloadHash;
     }
 
     function revoke(bytes32 keyId) external onlyOwner {

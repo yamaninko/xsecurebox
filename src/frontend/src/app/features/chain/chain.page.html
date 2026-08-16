@@ -1,0 +1,103 @@
+<div class="chain-page">
+  <header class="head">
+    <div>
+      <h1>Ethereum VM / Kontrat</h1>
+      <p>Çalışan düğümler, kayıtlı kontrat ve değiştirilebilir parametreler.</p>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" type="button" (click)="refresh()" [disabled]="loading">Yenile</button>
+      <button class="btn" type="button" (click)="save()" [disabled]="saving || loading">Kaydet</button>
+    </div>
+  </header>
+
+  <p class="banner" *ngIf="data && !data.enabled">Ethereum doğrulama kapalı. Compose’da Ethereum__Enabled=true olmalı.</p>
+
+  <section class="grid" *ngIf="data">
+    <article class="card">
+      <h2>Düğümler</h2>
+      <div class="node" *ngFor="let node of data.nodes">
+        <span class="dot" [class.up]="node.reachable"></span>
+        <div>
+          <strong>{{ node.url }}</strong>
+          <p *ngIf="node.reachable">block {{ node.blockNumber }} · chainId {{ node.chainId }}</p>
+          <p class="err" *ngIf="!node.reachable">{{ node.error }}</p>
+        </div>
+      </div>
+      <p class="muted" *ngIf="!data.nodes?.length">Kayıtlı RPC yok.</p>
+    </article>
+
+    <article class="card">
+      <h2>Kontrat durumu</h2>
+      <dl>
+        <div><dt>Adres</dt><dd>{{ data.contractAddress || '—' }}</dd></div>
+        <div><dt>systemId</dt><dd>{{ data.systemId || '—' }}</dd></div>
+        <div><dt>Owner</dt><dd>{{ data.owner || '—' }}</dd></div>
+        <div><dt>Operator</dt><dd>{{ data.operatorAddress }}</dd></div>
+        <div><dt>Paused</dt><dd>{{ data.paused ? 'evet' : 'hayır' }}</dd></div>
+        <div><dt>Deploy tx</dt><dd>{{ data.deployTxHash || '—' }}</dd></div>
+      </dl>
+    </article>
+  </section>
+
+  <section class="card" *ngIf="data">
+    <h2>Parametreler</h2>
+    <div class="form">
+      <label>RPC URL’leri (satır veya virgül)
+        <textarea rows="3" [(ngModel)]="form.rpcUrlsText"></textarea>
+      </label>
+      <div class="row">
+        <label>Quorum
+          <input type="number" min="1" [(ngModel)]="form.quorum">
+        </label>
+        <label>System name
+          <input [(ngModel)]="form.systemName">
+        </label>
+      </div>
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="form.requireOnRetrieve">
+        Retrieve öncesi zincir doğrulaması zorunlu
+      </label>
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="form.paused">
+        Kontratı duraklat (paused)
+      </label>
+      <label>Kontrat adresi (mevcut kontrata bağlan)
+        <input [(ngModel)]="form.contractAddress" placeholder="0x…">
+      </label>
+      <label>Yeni owner (boş bırakırsanız değişmez)
+        <input [(ngModel)]="form.newOwner" placeholder="0x…">
+      </label>
+      <button class="btn danger" type="button" (click)="redeploy()" [disabled]="saving">
+        Yeni kontrat yayınla
+      </button>
+    </div>
+  </section>
+
+  <section class="card" *ngIf="data">
+    <h2>Kontrat kaynağı</h2>
+    <pre class="source">{{ data.contractSource }}</pre>
+  </section>
+
+  <section class="card" *ngIf="data">
+    <h2>Mühürlü anahtarlar</h2>
+    <table *ngIf="data.sealedKeys?.length; else emptyKeys">
+      <thead>
+        <tr>
+          <th>Ad</th>
+          <th>Hash</th>
+          <th>Tx</th>
+          <th>Blok</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let key of data.sealedKeys">
+          <td>{{ key.name }}</td>
+          <td class="mono">{{ key.payloadHash }}</td>
+          <td class="mono">{{ key.txHash }}</td>
+          <td>{{ key.blockNumber }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #emptyKeys><p class="muted">Henüz zincire mühürlenmiş anahtar yok.</p></ng-template>
+  </section>
+</div>
