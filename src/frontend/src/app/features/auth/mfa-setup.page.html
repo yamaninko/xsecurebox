@@ -1,0 +1,72 @@
+<div class="mfa-shell">
+  <mat-card class="mfa-card">
+    <header class="mfa-header">
+      <mat-icon class="mfa-icon">verified_user</mat-icon>
+      <h1>İki adımlı doğrulama</h1>
+      <p>Google Authenticator ile hesabınızı koruyun. Telefona uygulamayı kurun, karekodu okutun, 6 haneli kodu girin.</p>
+    </header>
+
+    <div class="mfa-grid" *ngIf="qrDataUrl; else loadingTpl">
+      <aside class="qr-panel">
+        <div class="qr-frame">
+          <img [src]="qrDataUrl" width="220" height="220" alt="Google Authenticator QR kodu">
+        </div>
+        <p class="qr-caption">Google Authenticator → <strong>+</strong> → QR kodu tarayın</p>
+        <div class="stores">
+          <a href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" rel="noopener">App Store</a>
+          <span>·</span>
+          <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener">Google Play</a>
+        </div>
+      </aside>
+
+      <div class="form-panel">
+        <ol class="steps">
+          <li><span>1</span> Google Authenticator’ı indirin ve açın.</li>
+          <li><span>2</span> Sağ alttaki <strong>+</strong> → <strong>QR kodu tarayın</strong>.</li>
+          <li><span>3</span> Uygulamadaki 6 haneli kodu buraya yazın.</li>
+        </ol>
+
+        <div class="secret-row">
+          <div>
+            <label>QR okunmazsa kurulum anahtarı</label>
+            <code>{{ secret }}</code>
+          </div>
+          <button mat-stroked-button type="button" (click)="copySecret()">Kopyala</button>
+        </div>
+        <p class="hint">Hesap adı: XSecureBox ({{ username }}) · Zamana dayalı</p>
+
+        <mat-form-field appearance="outline" class="code-field">
+          <mat-label>6 haneli kod</mat-label>
+          <input
+            matInput
+            [(ngModel)]="code"
+            maxlength="6"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="000000"
+          />
+          <mat-icon matPrefix>pin</mat-icon>
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          class="enable-btn"
+          type="button"
+          (click)="enable()"
+          [disabled]="code.length < 6 || loading"
+        >
+          <mat-spinner *ngIf="loading" diameter="22"></mat-spinner>
+          <span *ngIf="!loading">Etkinleştir</span>
+        </button>
+      </div>
+    </div>
+
+    <ng-template #loadingTpl>
+      <div class="loading">
+        <mat-spinner diameter="36"></mat-spinner>
+        <p>QR hazırlanıyor…</p>
+      </div>
+    </ng-template>
+  </mat-card>
+</div>
